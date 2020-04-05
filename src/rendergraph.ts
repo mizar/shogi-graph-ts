@@ -12,25 +12,60 @@ export const YAxis = {
     Linear1200: 3 as const,
     Linear2000: 4 as const,
     Linear3000: 5 as const,
-    Atan: 6 as const
+    Atan: 6 as const,
 };
 export type YAxis = typeof YAxis[keyof typeof YAxis];
+
+// PseudoSigmoid, Atan, Tanh の 0付近の勾配
+const gradZero = 1200;
+
+function getScoreEval(yaxis: YAxis): (score: number) => number {
+    switch (yaxis) {
+        case YAxis.PseudoSigmoid:
+            return (score: number): number =>
+                Math.asin(
+                    Math.atan(score * ((Math.PI * Math.PI) / (gradZero * 4))) *
+                        (2 / Math.PI)
+                ) *
+                (2 / Math.PI);
+        case YAxis.Atan:
+            return (score: number): number =>
+                Math.atan(score * (Math.PI / (gradZero * 2))) * (2 / Math.PI);
+        case YAxis.Tanh:
+            return (score: number): number => Math.tanh(score / gradZero);
+        case YAxis.Linear1000:
+            return (score: number): number =>
+                Math.min(Math.max(score / 1000, -1), +1);
+        case YAxis.Linear1200:
+            return (score: number): number =>
+                Math.min(Math.max(score / 1200, -1), +1);
+        case YAxis.Linear2000:
+            return (score: number): number =>
+                Math.min(Math.max(score / 2000, -1), +1);
+        case YAxis.Linear3000:
+            return (score: number): number =>
+                Math.min(Math.max(score / 3000, -1), +1);
+        default:
+            return (): number => Number.NaN;
+    }
+}
+
 const YScale = {
     None: 0 as const,
     Score: 1 as const,
-    WinRate: 2 as const
+    WinRate: 2 as const,
 };
 type YScale = typeof YScale[keyof typeof YScale];
 const XScale = {
     None: 0 as const,
-    Ply: 1 as const
+    Ply: 1 as const,
 };
 type XScale = typeof XScale[keyof typeof XScale];
 const Line = {
     None: 0 as const,
     Nml: 1 as const,
     Bld: 2 as const,
-    EBld: 3 as const
+    EBld: 3 as const,
 };
 type Line = typeof Line[keyof typeof Line];
 interface GryphFamilyInfo {
@@ -93,37 +128,6 @@ export interface SvgScoreGraphProp {
     plyCallback: (ply: number) => void;
 }
 
-function getScoreEval(yaxis: YAxis): (score: number) => number {
-    switch (yaxis) {
-        case YAxis.PseudoSigmoid:
-            return (score: number): number =>
-                Math.asin(
-                    Math.atan(score * ((Math.PI * Math.PI) / 4800)) *
-                        (2 / Math.PI)
-                ) *
-                (2 / Math.PI);
-        case YAxis.Atan:
-            return (score: number): number =>
-                Math.atan(score * (Math.PI / 2400)) * (2 / Math.PI);
-        case YAxis.Tanh:
-            return (score: number): number => Math.tanh(score / 1200);
-        case YAxis.Linear1000:
-            return (score: number): number =>
-                Math.min(Math.max(score / 1000, -1), +1);
-        case YAxis.Linear1200:
-            return (score: number): number =>
-                Math.min(Math.max(score / 1200, -1), +1);
-        case YAxis.Linear2000:
-            return (score: number): number =>
-                Math.min(Math.max(score / 2000, -1), +1);
-        case YAxis.Linear3000:
-            return (score: number): number =>
-                Math.min(Math.max(score / 3000, -1), +1);
-        default:
-            return (): number => Number.NaN;
-    }
-}
-
 function getVper(yaxis: YAxis): Mark[] {
     switch (yaxis) {
         case YAxis.PseudoSigmoid:
@@ -163,15 +167,15 @@ function getVper(yaxis: YAxis): Mark[] {
                 0.0001,
                 0.00001,
                 0.000001,
-                0
-            ].map(vp => {
+                0,
+            ].map((vp) => {
                 const s = vp % 1 === 0 && vp % 10 !== 5;
                 return {
                     c: `${vp}%`,
                     v: vp / 100,
                     s,
                     m: vp % 50 === 0 ? Line.EBld : s ? Line.Bld : Line.Nml,
-                    l: vp % 100 === 0 ? Line.None : s ? Line.Bld : Line.Nml
+                    l: vp % 100 === 0 ? Line.None : s ? Line.Bld : Line.Nml,
                 };
             });
         case YAxis.Tanh:
@@ -196,15 +200,15 @@ function getVper(yaxis: YAxis): Mark[] {
                 15,
                 10,
                 5,
-                0
-            ].map(vp => {
+                0,
+            ].map((vp) => {
                 const s = vp % 1 === 0 && vp % 10 !== 5;
                 return {
                     c: `${vp}%`,
                     v: vp / 100,
                     s,
                     m: vp % 50 === 0 ? Line.EBld : s ? Line.Bld : Line.Nml,
-                    l: vp % 100 === 0 ? Line.None : s ? Line.Bld : Line.Nml
+                    l: vp % 100 === 0 ? Line.None : s ? Line.Bld : Line.Nml,
                 };
             });
         case YAxis.Linear1000:
@@ -223,15 +227,15 @@ function getVper(yaxis: YAxis): Mark[] {
                 30,
                 25,
                 20,
-                16
-            ].map(vp => {
+                16,
+            ].map((vp) => {
                 const s = vp % 1 === 0 && vp % 10 !== 5;
                 return {
                     c: `${vp}%`,
                     v: vp / 100,
                     s,
                     m: vp % 50 === 0 ? Line.EBld : s ? Line.Bld : Line.Nml,
-                    l: vp % 100 === 0 ? Line.None : s ? Line.Bld : Line.Nml
+                    l: vp % 100 === 0 ? Line.None : s ? Line.Bld : Line.Nml,
                 };
             });
         case YAxis.Linear1200:
@@ -252,15 +256,15 @@ function getVper(yaxis: YAxis): Mark[] {
                 25,
                 20,
                 15,
-                13
-            ].map(vp => {
+                13,
+            ].map((vp) => {
                 const s = vp % 1 === 0 && vp % 10 !== 5;
                 return {
                     c: `${vp}%`,
                     v: vp / 100,
                     s,
                     m: vp % 50 === 0 ? Line.EBld : s ? Line.Bld : Line.Nml,
-                    l: vp % 100 === 0 ? Line.None : s ? Line.Bld : Line.Nml
+                    l: vp % 100 === 0 ? Line.None : s ? Line.Bld : Line.Nml,
                 };
             });
         case YAxis.Linear2000:
@@ -293,8 +297,8 @@ function getVper(yaxis: YAxis): Mark[] {
                 7,
                 6,
                 5,
-                4
-            ].map(vp => {
+                4,
+            ].map((vp) => {
                 const s =
                     vp % 1 === 0 &&
                     vp % 10 !== 5 &&
@@ -311,7 +315,7 @@ function getVper(yaxis: YAxis): Mark[] {
                     v: vp / 100,
                     s,
                     m: vp % 50 === 0 ? Line.EBld : s ? Line.Bld : Line.Nml,
-                    l: vp % 100 === 0 ? Line.None : s ? Line.Bld : Line.Nml
+                    l: vp % 100 === 0 ? Line.None : s ? Line.Bld : Line.Nml,
                 };
             });
         case YAxis.Linear3000:
@@ -350,8 +354,8 @@ function getVper(yaxis: YAxis): Mark[] {
                 4,
                 3,
                 2,
-                1
-            ].map(vp => {
+                1,
+            ].map((vp) => {
                 const s =
                     (vp % 1 === 0 &&
                         vp % 10 !== 5 &&
@@ -374,7 +378,7 @@ function getVper(yaxis: YAxis): Mark[] {
                     v: vp / 100,
                     s: s && vp !== 40 && vp !== 60,
                     m: vp % 50 === 0 ? Line.EBld : s ? Line.Bld : Line.Nml,
-                    l: vp % 100 === 0 ? Line.None : s ? Line.Bld : Line.Nml
+                    l: vp % 100 === 0 ? Line.None : s ? Line.Bld : Line.Nml,
                 };
             });
         default:
@@ -432,7 +436,7 @@ function getVsc(yaxis: YAxis): Mark[] {
                 { c: "-9000", v: -9000, s: false, m: Line.Nml, l: Line.Nml },
                 { c: "-9999", v: -9999, s: true, m: Line.Bld, l: Line.Bld },
                 { c: "-99999", v: -99999, s: false, m: Line.Nml, l: Line.Nml },
-                { c: "-∞", v: -Infinity, s: true, m: Line.EBld, l: Line.None }
+                { c: "-∞", v: -Infinity, s: true, m: Line.EBld, l: Line.None },
             ];
         case YAxis.Atan:
             return [
@@ -498,7 +502,7 @@ function getVsc(yaxis: YAxis): Mark[] {
                 { c: "-9000", v: -9000, s: false, m: Line.Nml, l: Line.Nml },
                 { c: "-9999", v: -9999, s: true, m: Line.Bld, l: Line.Bld },
                 { c: "-99999", v: -99999, s: false, m: Line.Nml, l: Line.Nml },
-                { c: "-∞", v: -Infinity, s: false, m: Line.EBld, l: Line.None }
+                { c: "-∞", v: -Infinity, s: false, m: Line.EBld, l: Line.None },
             ];
         case YAxis.Tanh:
             return [
@@ -548,7 +552,7 @@ function getVsc(yaxis: YAxis): Mark[] {
                 { c: "-2000", v: -2000, s: true, m: Line.Bld, l: Line.Bld },
                 { c: "-2500", v: -2500, s: false, m: Line.Nml, l: Line.Nml },
                 { c: "-3000", v: -3000, s: false, m: Line.Nml, l: Line.Nml },
-                { c: "-∞", v: -Infinity, s: false, m: Line.EBld, l: Line.None }
+                { c: "-∞", v: -Infinity, s: false, m: Line.EBld, l: Line.None },
             ];
         case YAxis.Linear1000:
             return [
@@ -572,7 +576,7 @@ function getVsc(yaxis: YAxis): Mark[] {
                 { c: "-700", v: -700, s: false, m: Line.Nml, l: Line.Nml },
                 { c: "-800", v: -800, s: true, m: Line.Bld, l: Line.Nml },
                 { c: "-900", v: -900, s: false, m: Line.Nml, l: Line.Nml },
-                { c: "-1000", v: -1000, s: true, m: Line.EBld, l: Line.None }
+                { c: "-1000", v: -1000, s: true, m: Line.EBld, l: Line.None },
             ];
         case YAxis.Linear1200:
             return [
@@ -600,7 +604,7 @@ function getVsc(yaxis: YAxis): Mark[] {
                 { c: "-900", v: -900, s: false, m: Line.Nml, l: Line.Nml },
                 { c: "-1000", v: -1000, s: true, m: Line.Bld, l: Line.Bld },
                 { c: "-1100", v: -1100, s: false, m: Line.Nml, l: Line.Nml },
-                { c: "-1200", v: -1200, s: true, m: Line.EBld, l: Line.None }
+                { c: "-1200", v: -1200, s: true, m: Line.EBld, l: Line.None },
             ];
         case YAxis.Linear2000:
             return [
@@ -644,7 +648,7 @@ function getVsc(yaxis: YAxis): Mark[] {
                 { c: "-1700", v: -1700, s: false, m: Line.Nml, l: Line.Nml },
                 { c: "-1800", v: -1800, s: false, m: Line.Nml, l: Line.Nml },
                 { c: "-1900", v: -1900, s: false, m: Line.Nml, l: Line.Nml },
-                { c: "-2000", v: -2000, s: true, m: Line.EBld, l: Line.None }
+                { c: "-2000", v: -2000, s: true, m: Line.EBld, l: Line.None },
             ];
         case YAxis.Linear3000:
             return [
@@ -708,7 +712,7 @@ function getVsc(yaxis: YAxis): Mark[] {
                 { c: "-2700", v: -2700, s: false, m: Line.Nml, l: Line.Nml },
                 { c: "-2800", v: -2800, s: false, m: Line.Nml, l: Line.Nml },
                 { c: "-2900", v: -2900, s: false, m: Line.Nml, l: Line.Nml },
-                { c: "-3000", v: -3000, s: true, m: Line.EBld, l: Line.None }
+                { c: "-3000", v: -3000, s: true, m: Line.EBld, l: Line.None },
             ];
         default:
             return [];
@@ -757,7 +761,7 @@ function writeSvg<GElement extends BaseType>(
         comment,
         caption,
         capLink,
-        plyCallback
+        plyCallback,
     }: SvgScoreGraphProp
 ): void {
     const hheight = height / 2;
@@ -771,12 +775,13 @@ function writeSvg<GElement extends BaseType>(
     const gryphFamilyInconsolata: GryphFamilyInfo = {
         n: "Inconsolata",
         s: "https://github.com/google/fonts/tree/master/ofl/inconsolata",
-        l: "https://github.com/google/fonts/blob/master/ofl/inconsolata/OFL.txt"
+        l:
+            "https://github.com/google/fonts/blob/master/ofl/inconsolata/OFL.txt",
     };
     const gryphFamilyDejavuSans: GryphFamilyInfo = {
         n: "DejaVu Sans",
         s: "https://dejavu-fonts.github.io/",
-        l: "https://dejavu-fonts.github.io/License.html"
+        l: "https://dejavu-fonts.github.io/License.html",
     };
     const gryphData: {
         [char: string]:
@@ -808,103 +813,103 @@ function writeSvg<GElement extends BaseType>(
             f: gryphFamilyInconsolata,
             w: 0.45,
             p:
-                "M-.11-.073q-.03 0-.056-.026-.025-.008-.041-.038-.015-.03-.015-.067 0-.037.015-.075.016-.02.041-.037.026-.018.056-.018.031 0 .056.018.025.017.04.047.016.02.016.066 0 .057-.032.094-.032.036-.08.036zM-.204.3l.345-.623h.057L-.15.3zm.094-.426q.019 0 .034-.017.015-.018.015-.061t-.016-.06q-.016-.018-.035-.018-.018 0-.034.018-.015.017-.015.06 0 .042.016.06.016.018.035.018zM.121.31Q.091.31.065.293.04.276.024.247.009.217.009.181q0-.037.015-.066Q.04.086.065.069.091.051.121.051q.031 0 .056.018.025.017.04.047.015.029.015.065 0 .036-.015.066Q.202.276.176.293.151.31.121.31zM.122.26q.02 0 .035-.019Q.173.222.173.182q0-.035-.014-.057Q.145.102.12.102.1.102.084.12.068.138.068.18q0 .043.017.062Q.102.26.122.26z"
+                "M-.11-.073q-.03 0-.056-.026-.025-.008-.041-.038-.015-.03-.015-.067 0-.037.015-.075.016-.02.041-.037.026-.018.056-.018.031 0 .056.018.025.017.04.047.016.02.016.066 0 .057-.032.094-.032.036-.08.036zM-.204.3l.345-.623h.057L-.15.3zm.094-.426q.019 0 .034-.017.015-.018.015-.061t-.016-.06q-.016-.018-.035-.018-.018 0-.034.018-.015.017-.015.06 0 .042.016.06.016.018.035.018zM.121.31Q.091.31.065.293.04.276.024.247.009.217.009.181q0-.037.015-.066Q.04.086.065.069.091.051.121.051q.031 0 .056.018.025.017.04.047.015.029.015.065 0 .036-.015.066Q.202.276.176.293.151.31.121.31zM.122.26q.02 0 .035-.019Q.173.222.173.182q0-.035-.014-.057Q.145.102.12.102.1.102.084.12.068.138.068.18q0 .043.017.062Q.102.26.122.26z",
         },
         "+": {
             i: "l",
             f: gryphFamilyInconsolata,
             w: 0.45,
             p:
-                "M-.029-.238v.17h-.177v.062h.177v.187h.063v-.187h.171v-.062H.034v-.17z"
+                "M-.029-.238v.17h-.177v.062h.177v.187h.063v-.187h.171v-.062H.034v-.17z",
         },
         "-": {
             i: "m",
             f: gryphFamilyInconsolata,
             w: 0.45,
-            p: "M-.18-.063v.066h.36v-.066z"
+            p: "M-.18-.063v.066h.36v-.066z",
         },
         ".": {
             i: "n",
             f: gryphFamilyInconsolata,
             w: 0.45,
             p:
-                "M.047.238A.058.058 0 00-.012.181a.058.058 0 00-.059.057c0 .032.026.058.059.058A.058.058 0 00.047.238z"
+                "M.047.238A.058.058 0 00-.012.181a.058.058 0 00-.059.057c0 .032.026.058.059.058A.058.058 0 00.047.238z",
         },
         "0": {
             i: "a",
             f: gryphFamilyInconsolata,
             w: 0.45,
             p:
-                "M0-.343c-.099 0-.201.122-.201.321 0 .202.103.318.202.318.09 0 .197-.098.197-.313C.198-.229.096-.343 0-.343zM.097-.2l-.219.284a.471.471 0 01-.014-.118c0-.16.073-.248.135-.248.034 0 .071.027.098.082zm.023.066a.514.514 0 01.013.126c0 .174-.075.24-.13.24-.037 0-.075-.03-.102-.085z"
+                "M0-.343c-.099 0-.201.122-.201.321 0 .202.103.318.202.318.09 0 .197-.098.197-.313C.198-.229.096-.343 0-.343zM.097-.2l-.219.284a.471.471 0 01-.014-.118c0-.16.073-.248.135-.248.034 0 .071.027.098.082zm.023.066a.514.514 0 01.013.126c0 .174-.075.24-.13.24-.037 0-.075-.03-.102-.085z",
         },
         "1": {
             i: "b",
             f: gryphFamilyInconsolata,
             w: 0.45,
-            p: "M.049-.339H.001l-.163.085.016.039.125-.037v.537h.07z"
+            p: "M.049-.339H.001l-.163.085.016.039.125-.037v.537h.07z",
         },
         "2": {
             i: "c",
             f: gryphFamilyInconsolata,
             w: 0.45,
             p:
-                "M-.173-.242l.051.041c.006-.009.003-.015.009-.023a.13.13 0 01.106-.057c.067 0 .12.051.12.118 0 .076-.064.131-.109.172A.742.742 0 00-.177.24v.044h.366V.215C.182.212.177.217.175.219.171.223.169.223.165.223h-.262c.052-.09.125-.152.17-.194.045-.043.109-.107.109-.197a.176.176 0 00-.18-.175.204.204 0 00-.175.101z"
+                "M-.173-.242l.051.041c.006-.009.003-.015.009-.023a.13.13 0 01.106-.057c.067 0 .12.051.12.118 0 .076-.064.131-.109.172A.742.742 0 00-.177.24v.044h.366V.215C.182.212.177.217.175.219.171.223.169.223.165.223h-.262c.052-.09.125-.152.17-.194.045-.043.109-.107.109-.197a.176.176 0 00-.18-.175.204.204 0 00-.175.101z",
         },
         "3": {
             i: "d",
             f: gryphFamilyInconsolata,
             w: 0.45,
             p:
-                "M.16-.183c0-.085-.072-.158-.171-.158a.203.203 0 00-.15.067l.039.043a.15.15 0 01.108-.048c.064 0 .108.045.108.098a.11.11 0 01-.067.098c-.011.004-.039.015-.098.015v.056a.323.323 0 01.032-.002c.084 0 .146.044.146.119a.125.125 0 01-.125.127c-.058 0-.093-.038-.098-.043C-.124.18-.12.17-.129.161l-.052.063a.214.214 0 00.163.071C.102.295.174.21.174.113a.168.168 0 00-.107-.161.143.143 0 00.093-.135z"
+                "M.16-.183c0-.085-.072-.158-.171-.158a.203.203 0 00-.15.067l.039.043a.15.15 0 01.108-.048c.064 0 .108.045.108.098a.11.11 0 01-.067.098c-.011.004-.039.015-.098.015v.056a.323.323 0 01.032-.002c.084 0 .146.044.146.119a.125.125 0 01-.125.127c-.058 0-.093-.038-.098-.043C-.124.18-.12.17-.129.161l-.052.063a.214.214 0 00.163.071C.102.295.174.21.174.113a.168.168 0 00-.107-.161.143.143 0 00.093-.135z",
         },
         "4": {
             i: "e",
             f: gryphFamilyInconsolata,
             w: 0.45,
             p:
-                "M.063-.339L-.202.06v.052h.251v.172h.072V.113h.081V.051H.121v-.39zM.05-.228v.279h-.183z"
+                "M.063-.339L-.202.06v.052h.251v.172h.072V.113h.081V.051H.121v-.39zM.05-.228v.279h-.183z",
         },
         "5": {
             i: "f",
             f: gryphFamilyInconsolata,
             w: 0.45,
             p:
-                "M-.144-.339l-.022.317.045.018a.151.151 0 01.117-.059c.065 0 .127.05.127.149 0 .096-.059.148-.126.148A.15.15 0 01-.117.177C-.121.169-.116.159-.125.153L-.187.2a.223.223 0 00.185.096C.106.296.195.223.195.088.195-.046.111-.12.006-.12a.227.227 0 00-.101.024l.009-.18h.258v-.063z"
+                "M-.144-.339l-.022.317.045.018a.151.151 0 01.117-.059c.065 0 .127.05.127.149 0 .096-.059.148-.126.148A.15.15 0 01-.117.177C-.121.169-.116.159-.125.153L-.187.2a.223.223 0 00.185.096C.106.296.195.223.195.088.195-.046.111-.12.006-.12a.227.227 0 00-.101.024l.009-.18h.258v-.063z",
         },
         "6": {
             i: "g",
             f: gryphFamilyInconsolata,
             w: 0.45,
             p:
-                "M.037-.346c-.075 0-.155.046-.194.155a.601.601 0 00-.026.192.38.38 0 00.047.211.176.176 0 00.147.083c.095 0 .178-.08.178-.209S.106-.118.018-.118a.154.154 0 00-.132.075c.004-.213.106-.241.151-.241.041 0 .069.022.073.026.006.007.006.016.015.023l.048-.054a.195.195 0 00-.136-.057zm-.026.29c.05 0 .11.039.11.146 0 .097-.054.143-.107.143-.076 0-.133-.089-.125-.206.028-.051.076-.083.122-.083z"
+                "M.037-.346c-.075 0-.155.046-.194.155a.601.601 0 00-.026.192.38.38 0 00.047.211.176.176 0 00.147.083c.095 0 .178-.08.178-.209S.106-.118.018-.118a.154.154 0 00-.132.075c.004-.213.106-.241.151-.241.041 0 .069.022.073.026.006.007.006.016.015.023l.048-.054a.195.195 0 00-.136-.057zm-.026.29c.05 0 .11.039.11.146 0 .097-.054.143-.107.143-.076 0-.133-.089-.125-.206.028-.051.076-.083.122-.083z",
         },
         "7": {
             i: "h",
             f: gryphFamilyInconsolata,
             w: 0.45,
             p:
-                "M-.172-.339v.067h.267a6.129 6.129 0 00-.21.556h.079A4.98 4.98 0 01.181-.3v-.039z"
+                "M-.172-.339v.067h.267a6.129 6.129 0 00-.21.556h.079A4.98 4.98 0 01.181-.3v-.039z",
         },
         "8": {
             i: "i",
             f: gryphFamilyInconsolata,
             w: 0.45,
             p:
-                "M.008-.346c-.096 0-.169.069-.169.153a.17.17 0 00.095.146C-.14-.012-.19.056-.19.128c0 .093.082.167.189.167.109 0 .192-.076.192-.171 0-.074-.05-.14-.12-.173a.175.175 0 00.099-.15c0-.082-.071-.147-.162-.147zm-.021.328c.08.025.133.08.133.141 0 .06-.051.109-.118.109-.068 0-.12-.051-.12-.113 0-.059.046-.113.105-.137zm.015-.27c.056 0 .1.042.1.094 0 .048-.037.094-.086.12 0 0-.11-.042-.11-.125 0-.049.042-.089.096-.089z"
+                "M.008-.346c-.096 0-.169.069-.169.153a.17.17 0 00.095.146C-.14-.012-.19.056-.19.128c0 .093.082.167.189.167.109 0 .192-.076.192-.171 0-.074-.05-.14-.12-.173a.175.175 0 00.099-.15c0-.082-.071-.147-.162-.147zm-.021.328c.08.025.133.08.133.141 0 .06-.051.109-.118.109-.068 0-.12-.051-.12-.113 0-.059.046-.113.105-.137zm.015-.27c.056 0 .1.042.1.094 0 .048-.037.094-.086.12 0 0-.11-.042-.11-.125 0-.049.042-.089.096-.089z",
         },
         "9": {
             i: "j",
             f: gryphFamilyInconsolata,
             w: 0.45,
             p:
-                "M-.033.295C.043.295.122.249.16.15a.505.505 0 00.027-.185.521.521 0 00-.022-.174C.133-.305.061-.345-.004-.345c-.097 0-.178.086-.178.207 0 .119.08.196.171.196a.156.156 0 00.128-.067.433.433 0 01-.025.154.133.133 0 01-.198.063C-.115.202-.112.191-.123.184l-.048.054a.198.198 0 00.138.057zm.028-.298c-.055 0-.109-.045-.109-.138 0-.091.052-.142.109-.142.07 0 .13.078.119.204-.028.047-.074.076-.119.076z"
+                "M-.033.295C.043.295.122.249.16.15a.505.505 0 00.027-.185.521.521 0 00-.022-.174C.133-.305.061-.345-.004-.345c-.097 0-.178.086-.178.207 0 .119.08.196.171.196a.156.156 0 00.128-.067.433.433 0 01-.025.154.133.133 0 01-.198.063C-.115.202-.112.191-.123.184l-.048.054a.198.198 0 00.138.057zm.028-.298c-.055 0-.109-.045-.109-.138 0-.091.052-.142.109-.142.07 0 .13.078.119.204-.028.047-.074.076-.119.076z",
         },
         "±": {
             i: "o",
             f: gryphFamilyInconsolata,
             w: 0.45,
             p:
-                "M-.205.204v.063h.412V.204zm.176-.494v.171h-.177v.061h.177v.187h.063v-.187h.171v-.061H.034V-.29z"
+                "M-.205.204v.063h.412V.204zm.176-.494v.171h-.177v.061h.177v.187h.063v-.187h.171v-.061H.034V-.29z",
         },
         // "Infinity" symbol gryph import from "DejaVu Sans" font and modify full-width
         // https://dejavu-fonts.github.io/
@@ -917,8 +922,8 @@ function writeSvg<GElement extends BaseType>(
             f: gryphFamilyDejavuSans,
             w: 0.9,
             p:
-                "M.054.112Q.033.093-.001.048-.046.112-.087.14q-.051.034-.129.034-.092 0-.153-.054-.064-.057-.064-.151 0-.09.064-.151.057-.054.154-.054.05 0 .087.016.043.018.072.048.027.027.055.064.046-.064.086-.093.051-.034.129-.034.092 0 .153.054.064.057.064.151 0 .09-.064.151Q.31.175.213.175q-.05 0-.087-.016Q.089.144.054.111zM-.224.104q.113 0 .18-.129-.087-.141-.18-.141-.068 0-.103.039-.038.041-.038.096 0 .06.038.097.038.038.103.038zm.446-.268q-.102 0-.18.129.086.141.18.141.068 0 .103-.039.038-.041.038-.096 0-.06-.038-.097Q.287-.164.222-.164z"
-        }
+                "M.054.112Q.033.093-.001.048-.046.112-.087.14q-.051.034-.129.034-.092 0-.153-.054-.064-.057-.064-.151 0-.09.064-.151.057-.054.154-.054.05 0 .087.016.043.018.072.048.027.027.055.064.046-.064.086-.093.051-.034.129-.034.092 0 .153.054.064.057.064.151 0 .09-.064.151Q.31.175.213.175q-.05 0-.087-.016Q.089.144.054.111zM-.224.104q.113 0 .18-.129-.087-.141-.18-.141-.068 0-.103.039-.038.041-.038.096 0 .06.038.097.038.038.103.038zm.446-.268q-.102 0-.18.129.086.141.18.141.068 0 .103-.039.038-.041.038-.096 0-.06-.038-.097Q.287-.164.222-.164z",
+        },
     };
     const strPxWidth = (str: string): number =>
         // 文字列の文字配列化で str.split("") を用いるとUn: icode文字（コードポイント）毎ではなく、
@@ -939,8 +944,8 @@ function writeSvg<GElement extends BaseType>(
                 v: 1,
                 s: true,
                 m: Line.EBld,
-                l: Line.Nml
-            }
+                l: Line.Nml,
+            },
         ];
         for (let i = 10; i <= width; i += 10) {
             res.push({
@@ -955,7 +960,7 @@ function writeSvg<GElement extends BaseType>(
                         : i % 50 !== 0
                         ? Line.Nml
                         : Line.EBld,
-                l: i === width ? Line.None : i % 50 !== 0 ? Line.Nml : Line.Bld
+                l: i === width ? Line.None : i % 50 !== 0 ? Line.Nml : Line.Bld,
             });
         }
         if (maxPly % 10 !== 0) {
@@ -963,18 +968,18 @@ function writeSvg<GElement extends BaseType>(
                 v: maxPly,
                 s: true,
                 m: maxPly % 50 !== 0 ? Line.Nml : Line.EBld,
-                l: maxPly % 50 !== 0 ? Line.Nml : Line.Bld
+                l: maxPly % 50 !== 0 ? Line.Nml : Line.Bld,
             });
         }
         return res;
     })();
     const rgb = (v: { r: number; g: number; b: number }): string => {
-        const a = [v.r, v.g, v.b].map(c => Math.round(c));
+        const a = [v.r, v.g, v.b].map((c) => Math.round(c));
         return (
             "#" +
             a
-                .map(c =>
-                    a.some(n => n % 17 !== 0)
+                .map((c) =>
+                    a.some((n) => n % 17 !== 0)
                         ? (c + 256).toString(16).substr(1)
                         : (c / 17).toString(16)
                 )
@@ -1032,7 +1037,7 @@ function writeSvg<GElement extends BaseType>(
             )} ${fix(height + tPad + bPad)}`
         );
     const defs = svg.append("defs");
-    Object.keys(gryphData).forEach(char => {
+    Object.keys(gryphData).forEach((char) => {
         const data = gryphData[char];
         if (data) {
             defs.append("path")
@@ -1055,7 +1060,7 @@ function writeSvg<GElement extends BaseType>(
     let pathBld = "";
     let pathNml = "";
     let pathBorder = `M0,${-hheight}h${width}v${height}h${-width}z`;
-    hsc.forEach(e => {
+    hsc.forEach((e) => {
         const s = `M${e.v},${-hheight}v${height}`;
         switch (e.l) {
             case Line.Nml:
@@ -1071,7 +1076,7 @@ function writeSvg<GElement extends BaseType>(
     });
     switch (gridYAxisType) {
         case YScale.Score:
-            vsc.forEach(e => {
+            vsc.forEach((e) => {
                 if (isFinite(e.v)) {
                     const v = scoreEval(e.v);
                     const y = fix(-hheight * v);
@@ -1091,7 +1096,7 @@ function writeSvg<GElement extends BaseType>(
             });
             break;
         case YScale.WinRate:
-            vper.forEach(e => {
+            vper.forEach((e) => {
                 const v = scoreEval(vPerScore(e.v));
                 const y = fix(-hheight * v);
                 const s = `M0,${y}h${width}`;
@@ -1111,7 +1116,7 @@ function writeSvg<GElement extends BaseType>(
     }
     switch (lType) {
         case YScale.Score:
-            vsc.forEach(e => {
+            vsc.forEach((e) => {
                 const v = scoreEval(e.v);
                 const y = fix(-hheight * v);
                 const str = e.c;
@@ -1150,7 +1155,7 @@ function writeSvg<GElement extends BaseType>(
             });
             break;
         case YScale.WinRate:
-            vper.forEach(e => {
+            vper.forEach((e) => {
                 const v = scoreEval(vPerScore(e.v));
                 const y = fix(-hheight * v);
                 const str = e.c;
@@ -1191,7 +1196,7 @@ function writeSvg<GElement extends BaseType>(
     }
     switch (rType) {
         case YScale.Score:
-            vsc.forEach(e => {
+            vsc.forEach((e) => {
                 const v = scoreEval(e.v);
                 const y = fix(-hheight * v);
                 const str = e.c;
@@ -1231,7 +1236,7 @@ function writeSvg<GElement extends BaseType>(
             });
             break;
         case YScale.WinRate:
-            vper.forEach(e => {
+            vper.forEach((e) => {
                 const v = scoreEval(vPerScore(e.v));
                 const y = fix(-hheight * v);
                 const str = e.c;
@@ -1275,7 +1280,7 @@ function writeSvg<GElement extends BaseType>(
         case XScale.Ply:
             {
                 const g = charG.append("g").attr("fill", rgb(colorPly));
-                hsc.forEach(e => {
+                hsc.forEach((e) => {
                     if (e.s) {
                         const str = `${e.v}`;
                         [...str].forEach((c, i) => {
@@ -1283,18 +1288,22 @@ function writeSvg<GElement extends BaseType>(
                                 .attr("xlink:href", "#" + strSubGryphId(str, i))
                                 .attr(
                                     "transform",
-                                    `matrix(${fSizeBw} 0 0 ${fSizeBh} ${e.v +
+                                    `matrix(${fSizeBw} 0 0 ${fSizeBh} ${
+                                        e.v +
                                         fSizeBw *
                                             (strPxWidth(str.substring(0, i)) +
                                                 strPxWidth(c) / 2 -
-                                                strPxWidth(str) /
-                                                    2)} ${-hheight -
+                                                strPxWidth(str) / 2)
+                                    } ${
+                                        -hheight -
                                         (fSizeBh * gryphHeight) / 2 -
-                                        scalePad})`
+                                        scalePad
+                                    })`
                                 );
                         });
-                        pathBorder += `M${e.v},${-hheight -
-                            scaleLength}v${scaleLength}`;
+                        pathBorder += `M${e.v},${
+                            -hheight - scaleLength
+                        }v${scaleLength}`;
                     }
                 });
             }
@@ -1304,7 +1313,7 @@ function writeSvg<GElement extends BaseType>(
         case XScale.Ply:
             {
                 const g = charG.append("g").attr("fill", rgb(colorPly));
-                hsc.forEach(e => {
+                hsc.forEach((e) => {
                     if (e.s) {
                         const str = `${e.v}`;
                         [...str].forEach((c, i) => {
@@ -1312,14 +1321,17 @@ function writeSvg<GElement extends BaseType>(
                                 .attr("xlink:href", "#" + strSubGryphId(str, i))
                                 .attr(
                                     "transform",
-                                    `matrix(${fSizeBw} 0 0 ${fSizeBh} ${e.v +
+                                    `matrix(${fSizeBw} 0 0 ${fSizeBh} ${
+                                        e.v +
                                         fSizeBw *
                                             (strPxWidth(str.substring(0, i)) +
                                                 strPxWidth(c) / 2 -
-                                                strPxWidth(str) /
-                                                    2)} ${hheight +
+                                                strPxWidth(str) / 2)
+                                    } ${
+                                        hheight +
                                         (fSizeBh * gryphHeight) / 2 +
-                                        scalePad})`
+                                        scalePad
+                                    })`
                                 );
                         });
                         pathBorder += `M${e.v},${hheight}v${scaleLength}`;
@@ -1461,7 +1473,7 @@ export function doWrite<GElement extends BaseType>(
                 comment: [],
                 caption: "",
                 capLink: "",
-                plyCallback: () => undefined
+                plyCallback: () => undefined,
             },
             p
         )

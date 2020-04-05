@@ -23,7 +23,7 @@ const colorSet: { [c: string]: Partial<SvgScoreGraphProp> | undefined } = {
         colorPlayer0: { r: 0, g: 0, b: 0 },
         colorPlayer1: { r: 255, g: 51, b: 0 },
         colorPlayer2: { r: 0, g: 51, b: 255 },
-        colorCap: { r: 0, g: 0, b: 0 }
+        colorCap: { r: 0, g: 0, b: 0 },
     },
     black: {
         colorBackground: { r: 0, g: 0, b: 0 },
@@ -35,7 +35,7 @@ const colorSet: { [c: string]: Partial<SvgScoreGraphProp> | undefined } = {
         colorPlayer0: { r: 255, g: 255, b: 255 },
         colorPlayer1: { r: 255, g: 136, b: 0 },
         colorPlayer2: { r: 0, g: 136, b: 255 },
-        colorCap: { r: 255, g: 255, b: 255 }
+        colorCap: { r: 255, g: 255, b: 255 },
     },
     aqua: {
         colorBackground: { r: 0, g: 191, b: 255 },
@@ -47,32 +47,32 @@ const colorSet: { [c: string]: Partial<SvgScoreGraphProp> | undefined } = {
         colorPlayer0: { r: 0, g: 0, b: 0 },
         colorPlayer1: { r: 255, g: 0, b: 0 },
         colorPlayer2: { r: 0, g: 0, b: 255 },
-        colorCap: { r: 0, g: 0, b: 0 }
-    }
+        colorCap: { r: 0, g: 0, b: 0 },
+    },
 };
 
 const yaxisSet: { [c: string]: Partial<SvgScoreGraphProp> | undefined } = {
     pseudoSigmoid: {
-        plotYAxisType: YAxis.PseudoSigmoid
+        plotYAxisType: YAxis.PseudoSigmoid,
     },
     atan: {
-        plotYAxisType: YAxis.Atan
+        plotYAxisType: YAxis.Atan,
     },
     tanh: {
-        plotYAxisType: YAxis.Tanh
+        plotYAxisType: YAxis.Tanh,
     },
     linear1000: {
-        plotYAxisType: YAxis.Linear1000
+        plotYAxisType: YAxis.Linear1000,
     },
     linear1200: {
-        plotYAxisType: YAxis.Linear1200
+        plotYAxisType: YAxis.Linear1200,
     },
     linear2000: {
-        plotYAxisType: YAxis.Linear2000
+        plotYAxisType: YAxis.Linear2000,
     },
     linear3000: {
-        plotYAxisType: YAxis.Linear3000
-    }
+        plotYAxisType: YAxis.Linear3000,
+    },
 };
 
 function getGameIdHash(): string {
@@ -84,47 +84,20 @@ window.addEventListener("load", () => {
     const body = select("body");
     const selectGame = body.append("select").attr("id", "selectgame");
     const selectColor = body.append("select").attr("id", "selectcolor");
-    selectColor
-        .append("option")
-        .attr("value", "white")
-        .text("white");
-    selectColor
-        .append("option")
-        .attr("value", "black")
-        .text("black");
-    selectColor
-        .append("option")
-        .attr("value", "aqua")
-        .text("aqua");
+    selectColor.append("option").attr("value", "white").text("white");
+    selectColor.append("option").attr("value", "black").text("black");
+    selectColor.append("option").attr("value", "aqua").text("aqua");
     const selectYAxis = body.append("select").attr("id", "selectyaxis");
     selectYAxis
         .append("option")
         .attr("value", "pseudoSigmoid")
         .text("pSigmoid");
-    selectYAxis
-        .append("option")
-        .attr("value", "atan")
-        .text("atan");
-    selectYAxis
-        .append("option")
-        .attr("value", "tanh")
-        .text("tanh");
-    selectYAxis
-        .append("option")
-        .attr("value", "linear1000")
-        .text("linear1000");
-    selectYAxis
-        .append("option")
-        .attr("value", "linear1200")
-        .text("linear1200");
-    selectYAxis
-        .append("option")
-        .attr("value", "linear2000")
-        .text("linear2000");
-    selectYAxis
-        .append("option")
-        .attr("value", "linear3000")
-        .text("linear3000");
+    selectYAxis.append("option").attr("value", "atan").text("atan");
+    selectYAxis.append("option").attr("value", "tanh").text("tanh");
+    selectYAxis.append("option").attr("value", "linear1000").text("linear1000");
+    selectYAxis.append("option").attr("value", "linear1200").text("linear1200");
+    selectYAxis.append("option").attr("value", "linear2000").text("linear2000");
+    selectYAxis.append("option").attr("value", "linear3000").text("linear3000");
     const iconSet = <G extends BaseType>(
         button: Selection<G, unknown, HTMLElement, unknown>,
         src: string
@@ -188,8 +161,8 @@ window.addEventListener("load", () => {
         ) {
             lastFetch = Date.now();
             if (
-                !player.kifu.moves.some(v =>
-                    v.comments?.some(str => str.startsWith("$END_TIME:"))
+                !player.kifu.moves.some((v) =>
+                    v.comments?.some((str) => str.startsWith("$END_TIME:"))
                 )
             ) {
                 setTimeout(() => {
@@ -219,7 +192,7 @@ window.addEventListener("load", () => {
                 Partial<SvgScoreGraphProp> | undefined
             >(
                 {
-                    score: player.kifu.moves.map(v =>
+                    score: player.kifu.moves.map((v) =>
                         v.comments
                             ? v.comments.reduce((p, c) => {
                                   const matches = c.match(/^\*\* (-?\d+)/);
@@ -227,12 +200,12 @@ window.addEventListener("load", () => {
                               }, NaN)
                             : NaN
                     ),
-                    comment: player.kifu.moves.map(v =>
+                    comment: player.kifu.moves.map((v) =>
                         (v.time
                             ? [
                                   timeFmt(v.time.now) +
                                       " / " +
-                                      timeFmt(v.time.total)
+                                      timeFmt(v.time.total),
                               ]
                             : []
                         )
@@ -247,9 +220,9 @@ window.addEventListener("load", () => {
                             ?.dispatch("change", {
                                 bubbles: true,
                                 cancelable: false,
-                                detail: {}
+                                detail: {},
                             });
-                    }
+                    },
                 },
                 colorSet[color],
                 yaxisSet[yaxis]
@@ -267,7 +240,7 @@ window.addEventListener("load", () => {
                 "sfen " +
                     player.shogi.toSFENString(
                         player.kifu.moves.length -
-                            (player.kifu.moves.some(e => e.special) ? 1 : 0)
+                            (player.kifu.moves.some((e) => e.special) ? 1 : 0)
                     )
             )
             .on("focus", () => {
@@ -288,7 +261,7 @@ window.addEventListener("load", () => {
                 .dispatch("change", {
                     bubbles: true,
                     cancelable: false,
-                    detail: {}
+                    detail: {},
                 });
         }
         const par = graphdiv.append("p");
@@ -302,7 +275,7 @@ window.addEventListener("load", () => {
                             ? [
                                   timeFmt(v.time.now) +
                                       " / " +
-                                      timeFmt(v.time.total)
+                                      timeFmt(v.time.total),
                               ]
                             : []
                         )
@@ -311,14 +284,14 @@ window.addEventListener("load", () => {
                     )
                     .text(`${i}${JKFPlayer.moveToReadableKifu(v)}`);
                 par.append("span").text(" ");
-                if (v.comments?.some(str => str.startsWith("$END_TIME:"))) {
+                if (v.comments?.some((str) => str.startsWith("$END_TIME:"))) {
                     graphdiv.append("pre").text(v.comments?.join("\n"));
                 }
             }
         });
         if (
-            !player.kifu.moves.some(v =>
-                v.comments?.some(str => str.startsWith("$END_TIME:"))
+            !player.kifu.moves.some((v) =>
+                v.comments?.some((str) => str.startsWith("$END_TIME:"))
             )
         ) {
             boarddiv.select("select.autoload").property("value", "30");
@@ -342,7 +315,7 @@ window.addEventListener("load", () => {
             .concat(
                 log
                     .match(/(?<=\[INFO\] game (?:started|finished) ).*/g)
-                    ?.map(v => v) ?? []
+                    ?.map((v) => v) ?? []
             )
             .filter((x, i, self) => self.indexOf(x) === i)
             .sort(
@@ -351,14 +324,11 @@ window.addEventListener("load", () => {
                     parseFloat(b.substring(b.length - 14))
             );
         selectGame.selectAll("*").remove();
-        gameList.forEach(gameid => {
+        gameList.forEach((gameid) => {
             const shortGameId = gameid.startsWith("wdoor+floodgate-300-10F+")
                 ? gameid.substring(24)
                 : gameid;
-            selectGame
-                .append("option")
-                .attr("value", gameid)
-                .text(shortGameId);
+            selectGame.append("option").attr("value", gameid).text(shortGameId);
         });
         const gameIdHash = getGameIdHash();
         if (gameIdHash) {
@@ -393,9 +363,9 @@ window.addEventListener("load", () => {
     listLoad();
     doWrite(body.append("div").attr("style", "display:none"), {
         maxPly: 320,
-        width: 321
+        width: 321,
     });
-    window.addEventListener("hashchange", ev => {
+    window.addEventListener("hashchange", (ev) => {
         if (ev.isTrusted) {
             const gameId = getGameIdHash();
             if (gameId) {
