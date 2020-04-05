@@ -1,0 +1,45 @@
+{
+// tasks.json 形式の詳細についての資料は、
+    // https://go.microsoft.com/fwlink/?LinkId=733558 をご覧ください
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "npm",
+            "script": "build",
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "type": "npm",
+            "script": "dev-server",
+            "problemMatcher": []
+        },
+        {
+            "type": "npm",
+            "script": "build:watch",
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "type": "npm",
+            "script": "build:analyze",
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "type": "npm",
+            "script": "dev-server-local",
+            "problemMatcher": []
+        },
+        {
+            "type": "npm",
+            "script": "lint:fix",
+            "problemMatcher": []
+        },
+        {
+            "type": "npm",
+            "script": "lint",
+            "problemMatcher": []
+        }
+    ]
+}
