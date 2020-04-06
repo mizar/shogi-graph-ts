@@ -14,7 +14,6 @@
     "dev-server-local": "webpack-dev-server --open --useLocalIp"
   },
   "dependencies": {
-    "copy-to-clipboard": "^3.3.1",
     "json-kifu-format": "https://github.com/mizar/json-kifu-format.git",
     "shogi.js": "https://github.com/mizar/Shogi.js.git"
   },

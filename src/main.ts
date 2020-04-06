@@ -7,8 +7,8 @@ import { doWrite, SvgScoreGraphProp, YAxis } from "./rendergraph";
 import { JKFPlayer } from "json-kifu-format";
 import { ITimeFormat } from "json-kifu-format/dist/src/Formats";
 import { select, BaseType, Selection } from "d3-selection";
-import copy from "copy-to-clipboard";
-import copySvg from "tabler-icons/icons/copy.svg";
+import copySvg from "tabler-icons/icons/file-text.svg";
+import saveSvg from "tabler-icons/icons/photo.svg";
 import rotateSvg from "tabler-icons/icons/rotate.svg";
 import refreshSvg from "tabler-icons/icons/refresh.svg";
 
@@ -89,6 +89,10 @@ window.addEventListener("load", () => {
     selectColor.append("option").attr("value", "aqua").text("aqua");
     const selectYAxis = body.append("select").attr("id", "selectyaxis");
     selectYAxis
+        .attr(
+            "title",
+            "{\n  'pSigmoid': (score) => Math.asin(Math.atan(score * ((Math.PI * Math.PI) / 4800)) * (2 / Math.PI)) * (2 / Math.PI),\n  'atan': (score) => Math.atan(score * (Math.PI / 2400)) * (2 / Math.PI),\n  'tanh': (score) => Math.tanh(score / 1200),\n  'linear1000': (score) => Math.min(Math.max(score / 1000, -1), +1),\n  'linear1200': (score) => Math.min(Math.max(score / 1200, -1), +1),\n  'linear2000': (score) => Math.min(Math.max(score / 2000, -1), +1),\n  'linear3000': (score) => Math.min(Math.max(score / 3000, -1), +1),\n}"
+        )
         .append("option")
         .attr("value", "pseudoSigmoid")
         .text("pSigmoid");
@@ -116,6 +120,10 @@ window.addEventListener("load", () => {
         .append("button")
         .attr("title", "現在表示中の棋譜をクリップボードにコピー");
     iconSet(copyButton, copySvg);
+    const saveButton = body
+        .append("button")
+        .attr("title", "形勢グラフをクリップボードにコピー");
+    iconSet(saveButton, saveSvg);
     const redoButton = body
         .append("button")
         .attr("title", "現在表示中の棋譜を再読み込み");
@@ -172,7 +180,7 @@ window.addEventListener("load", () => {
             return;
         }
         copyButton.on("click", () => {
-            copy(csa);
+            navigator.clipboard.writeText(csa);
         });
         const lastPly = graphdiv
             .select<HTMLSelectElement>("select.kifulist")
@@ -349,6 +357,36 @@ window.addEventListener("load", () => {
             window.location.hash = newHash;
         }
         fetchGame(gameid);
+    });
+    saveButton.on("click", () => {
+        const svgArray = graphdiv.select<SVGElement>("svg").nodes();
+        if (svgArray.length) {
+            const svg = svgArray[0];
+            const canvas = document.createElement("canvas");
+            canvas.width =
+                svg.clientWidth * Math.max(480 / svg.clientHeight, 1);
+            canvas.height = Math.max(svg.clientHeight, 480);
+            const ctx = canvas.getContext("2d");
+            const image = new Image();
+            image.onload = (): void => {
+                ctx?.drawImage(image, 0, 0, canvas.width, canvas.height);
+                canvas.toBlob((blob) => {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    if (blob && (global as any).ClipboardItem) {
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        (navigator.clipboard as any)?.write([
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            new (global as any).ClipboardItem({
+                                [blob.type]: blob,
+                            }),
+                        ]);
+                    }
+                });
+            };
+            image.src = `data:image/svg+xml;charset=utf-8;base64,${btoa(
+                new XMLSerializer().serializeToString(svg)
+            )}`;
+        }
     });
     reloadButton.on("click", () => {
         window.location.hash = "";

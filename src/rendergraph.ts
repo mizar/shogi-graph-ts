@@ -16,23 +16,21 @@ export const YAxis = {
 };
 export type YAxis = typeof YAxis[keyof typeof YAxis];
 
-// PseudoSigmoid, Atan, Tanh の 0付近の勾配
-const gradZero = 1200;
-
+// y軸プロット用関数の選択
 function getScoreEval(yaxis: YAxis): (score: number) => number {
     switch (yaxis) {
         case YAxis.PseudoSigmoid:
             return (score: number): number =>
                 Math.asin(
-                    Math.atan(score * ((Math.PI * Math.PI) / (gradZero * 4))) *
+                    Math.atan(score * ((Math.PI * Math.PI) / 4800)) *
                         (2 / Math.PI)
                 ) *
                 (2 / Math.PI);
         case YAxis.Atan:
             return (score: number): number =>
-                Math.atan(score * (Math.PI / (gradZero * 2))) * (2 / Math.PI);
+                Math.atan(score * (Math.PI / 2400)) * (2 / Math.PI);
         case YAxis.Tanh:
-            return (score: number): number => Math.tanh(score / gradZero);
+            return (score: number): number => Math.tanh(score / 1200);
         case YAxis.Linear1000:
             return (score: number): number =>
                 Math.min(Math.max(score / 1000, -1), +1);
