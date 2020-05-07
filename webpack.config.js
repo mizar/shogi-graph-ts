@@ -7,28 +7,28 @@ const { gzip } = require("@gfx/zopfli");
 const { name } = require("./package.json");
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-module.exports = env => ({
+module.exports = (env) => ({
     devtool: "source-map",
     entry: "./src/main.ts",
     module: {
         rules: [
             {
                 test: /\.ts$/,
-                use: "ts-loader"
+                use: "ts-loader",
             },
             {
                 test: /\.(jpe?g|png|gif|svg|ttf|otf)$/i,
-                loader: "url-loader"
-            }
-        ]
+                loader: "url-loader",
+            },
+        ],
     },
     plugins: [].concat(
         env && env.production ? [new CleanWebpackPlugin()] : [],
         [
             new HtmlWebPackPlugin({
                 title: name,
-                template: "./src/index.ejs"
-            })
+                template: "./src/index.ejs",
+            }),
         ],
         env && env.production
             ? [
@@ -42,7 +42,7 @@ module.exports = env => ({
                       compressionOptions: { numiterations: 15 },
                       threshold: 10240,
                       minRatio: 0.8,
-                      deleteOriginalAssets: false
+                      deleteOriginalAssets: false,
                   }),
                   new CompressionPlugin({
                       algorithm: "brotliCompress",
@@ -51,13 +51,13 @@ module.exports = env => ({
                       compressionOptions: { level: 11 },
                       threshold: 10240,
                       minRatio: 0.8,
-                      deleteOriginalAssets: false
-                  })
+                      deleteOriginalAssets: false,
+                  }),
               ]
             : [],
         env && env.analyze ? [new BundleAnalyzerPlugin()] : []
     ),
     resolve: {
-        extensions: [".html", ".ts", ".js", ".json"]
-    }
+        extensions: [".html", ".ts", ".js", ".json"],
+    },
 });
