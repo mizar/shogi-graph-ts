@@ -76,7 +76,7 @@ const yaxisSet: { [c: string]: Partial<SvgScoreGraphProp> | undefined } = {
 };
 
 function getGameIdHash(): string {
-    const found = window.location.hash.match(/^#((?:[\w.-]+\+){4}\d+)$/);
+    const found = window.location.hash.match(/^#((?:[\w.-]+\+){4}\d+)/);
     return found ? found[1] : "";
 }
 
@@ -139,6 +139,7 @@ window.addEventListener("load", () => {
     let lastCsa = "";
     let lastColor = "";
     let lastYAxis = "";
+    let gameList: string[] = [];
     const fetchGame = async (gameid: string, auto = false): Promise<void> => {
         if (lastFetch + 8500 > Date.now() && lastGame === gameid && auto) {
             return;
@@ -208,15 +209,22 @@ window.addEventListener("load", () => {
                               }, NaN)
                             : NaN
                     ),
-                    comment: player.kifu.moves.map((v) =>
-                        (v.time
-                            ? [
-                                  timeFmt(v.time.now) +
-                                      " / " +
-                                      timeFmt(v.time.total),
-                              ]
-                            : []
-                        )
+                    comment: player.kifu.moves.map((v, i) =>
+                        [
+                            [
+                                i !== 0
+                                    ? `${i}${JKFPlayer.moveToReadableKifu(v)}`
+                                    : "",
+                                v.time
+                                    ? `${timeFmt(v.time.now)} / ${timeFmt(
+                                          v.time.total
+                                      )}`
+                                    : "",
+                            ]
+                                .filter((s) => s)
+                                .join(" "),
+                        ]
+                            .filter((s) => s)
                             .concat(v.comments ?? [])
                             .join("\n")
                     ),
@@ -307,13 +315,35 @@ window.addEventListener("load", () => {
                 fetchGame(selectGame.property("value"), true);
             }, 10000);
         }
+        if (!gameList.includes(gameid)) {
+            gameList = gameList
+                .concat(gameid)
+                .filter((x, i, self) => self.indexOf(x) === i)
+                .sort(
+                    (a, b) =>
+                        parseFloat(a.substring(a.length - 14)) -
+                        parseFloat(b.substring(b.length - 14))
+                );
+            selectGame.selectAll("*").remove();
+            gameList.forEach((gameid) => {
+                const shortGameId = gameid.startsWith(
+                    "wdoor+floodgate-300-10F+"
+                )
+                    ? gameid.substring(24)
+                    : gameid;
+                selectGame
+                    .append("option")
+                    .attr("value", gameid)
+                    .text(shortGameId);
+            });
+            selectGame.property("value", gameid);
+        }
         lastFetch = Date.now();
         lastGame = gameid;
         lastCsa = csa;
         lastColor = color;
         lastYAxis = yaxis;
     };
-    let gameList: string[] = [];
     const listLoad = async (): Promise<void> => {
         const logPromise = await fetch(
             "https://mzr.jp/wdoor-latest/shogi-server.log"
@@ -322,8 +352,14 @@ window.addEventListener("load", () => {
         gameList = gameList
             .concat(
                 log
-                    .match(/(?<=\[INFO\] game (?:started|finished) ).*/g)
-                    ?.map((v) => v) ?? []
+                    .split("\n")
+                    .map(
+                        (s) =>
+                            (s.match(
+                                /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d \[INFO\] game (?:started|finished) ((?:[\w.-]+\+){4}\d+)/
+                            ) ?? { 1: "" })[1]
+                    )
+                    .filter((s) => s)
             )
             .filter((x, i, self) => self.indexOf(x) === i)
             .sort(
@@ -362,30 +398,41 @@ window.addEventListener("load", () => {
         const svgArray = graphdiv.select<SVGElement>("svg").nodes();
         if (svgArray.length) {
             const svg = svgArray[0];
+            const svgUrl = `data:image/svg+xml;charset=utf-8;base64,${btoa(
+                unescape(
+                    encodeURIComponent(
+                        new XMLSerializer().serializeToString(svg)
+                    )
+                )
+            )}`;
             const canvas = document.createElement("canvas");
-            canvas.width =
-                svg.clientWidth * Math.max(480 / svg.clientHeight, 1);
             canvas.height = Math.max(svg.clientHeight, 480);
+            canvas.width = Math.round(
+                (canvas.height / svg.clientHeight) * svg.clientWidth
+            );
             const ctx = canvas.getContext("2d");
-            const image = new Image();
+            const image = new Image(canvas.width, canvas.height);
             image.onload = (): void => {
                 ctx?.drawImage(image, 0, 0, canvas.width, canvas.height);
-                canvas.toBlob((blob) => {
+                if (
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    if (blob && (global as any).ClipboardItem) {
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        (navigator.clipboard as any)?.write([
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            new (global as any).ClipboardItem({
-                                [blob.type]: blob,
-                            }),
-                        ]);
-                    }
-                });
+                    (global as any).ClipboardItem &&
+                    navigator.clipboard.write
+                ) {
+                    canvas.toBlob(async (blob) => {
+                        if (blob) {
+                            await navigator.clipboard.write([
+                                new ClipboardItem({
+                                    [blob.type]: blob,
+                                }),
+                            ]);
+                        }
+                    });
+                } else {
+                    navigator.clipboard.writeText(canvas.toDataURL());
+                }
             };
-            image.src = `data:image/svg+xml;charset=utf-8;base64,${btoa(
-                new XMLSerializer().serializeToString(svg)
-            )}`;
+            image.src = svgUrl;
         }
     });
     reloadButton.on("click", () => {
