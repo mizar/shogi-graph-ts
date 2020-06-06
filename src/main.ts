@@ -76,7 +76,9 @@ const yaxisSet: { [c: string]: Partial<SvgScoreGraphProp> | undefined } = {
 };
 
 function getGameIdHash(): string {
-    const found = window.location.hash.match(/^#((?:[\w.-]+\+){4}\d+)/);
+    const found = window.location.hash.match(
+        /^#(?:.*\/)?((?:[\w.-]+\+){4}\d+)/
+    );
     return found ? found[1] : "";
 }
 
