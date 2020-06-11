@@ -12,42 +12,58 @@ import saveSvg from "tabler-icons/icons/photo.svg";
 import rotateSvg from "tabler-icons/icons/rotate.svg";
 import refreshSvg from "tabler-icons/icons/refresh.svg";
 
+interface GameObj {
+    gameId: string;
+    gameName: string;
+}
+interface TimeMan {
+    base: number;
+    increment: number;
+    byoyomi: number;
+}
+
+declare const gameUrl: (gameid: string) => string;
+declare const gameUrlOrg: (gameid: string) => string;
+declare const gameUrlList: string;
+declare const gameLogParser: (log: string) => GameObj[];
+declare const kifuVisible: boolean;
+
 const colorSet: { [c: string]: Partial<SvgScoreGraphProp> | undefined } = {
     white: {
-        colorBackground: { r: 255, g: 255, b: 255 },
-        colorGridNml: { r: 170, g: 170, b: 170 },
-        colorGridBld: { r: 136, g: 136, b: 136 },
-        colorGridEBld: { r: 68, g: 68, b: 68 },
-        colorGridBorder: { r: 0, g: 0, b: 0 },
-        colorPly: { r: 0, g: 0, b: 0 },
-        colorPlayer0: { r: 0, g: 0, b: 0 },
-        colorPlayer1: { r: 255, g: 51, b: 0 },
-        colorPlayer2: { r: 0, g: 51, b: 255 },
-        colorCap: { r: 0, g: 0, b: 0 },
+        colorBackground: { r: 255, g: 255, b: 255, a: 1 },
+        colorGridNml: { r: 170, g: 170, b: 170, a: 1 },
+        colorGridBld: { r: 136, g: 136, b: 136, a: 1 },
+        colorGridEBld: { r: 68, g: 68, b: 68, a: 1 },
+        colorGridBorder: { r: 0, g: 0, b: 0, a: 1 },
+        colorPly: { r: 0, g: 0, b: 0, a: 1 },
+        colorPlayer0: { r: 0, g: 0, b: 0, a: 1 },
+        colorPlayer1: { r: 255, g: 51, b: 0, a: 1 },
+        colorPlayer2: { r: 0, g: 51, b: 255, a: 1 },
+        colorCap: { r: 0, g: 0, b: 0, a: 1 },
     },
     black: {
-        colorBackground: { r: 0, g: 0, b: 0 },
-        colorGridNml: { r: 136, g: 136, b: 136 },
-        colorGridBld: { r: 153, g: 153, b: 153 },
-        colorGridEBld: { r: 170, g: 170, b: 170 },
-        colorGridBorder: { r: 255, g: 255, b: 255 },
-        colorPly: { r: 255, g: 255, b: 255 },
-        colorPlayer0: { r: 255, g: 255, b: 255 },
-        colorPlayer1: { r: 255, g: 136, b: 0 },
-        colorPlayer2: { r: 0, g: 136, b: 255 },
-        colorCap: { r: 255, g: 255, b: 255 },
+        colorBackground: { r: 0, g: 0, b: 0, a: 1 },
+        colorGridNml: { r: 136, g: 136, b: 136, a: 1 },
+        colorGridBld: { r: 153, g: 153, b: 153, a: 1 },
+        colorGridEBld: { r: 170, g: 170, b: 170, a: 1 },
+        colorGridBorder: { r: 255, g: 255, b: 255, a: 1 },
+        colorPly: { r: 255, g: 255, b: 255, a: 1 },
+        colorPlayer0: { r: 255, g: 255, b: 255, a: 1 },
+        colorPlayer1: { r: 255, g: 136, b: 0, a: 1 },
+        colorPlayer2: { r: 0, g: 136, b: 255, a: 1 },
+        colorCap: { r: 255, g: 255, b: 255, a: 1 },
     },
     aqua: {
-        colorBackground: { r: 0, g: 191, b: 255 },
-        colorGridNml: { r: 136, g: 136, b: 136 },
-        colorGridBld: { r: 102, g: 102, b: 102 },
-        colorGridEBld: { r: 68, g: 68, b: 68 },
-        colorGridBorder: { r: 0, g: 0, b: 0 },
-        colorPly: { r: 0, g: 0, b: 0 },
-        colorPlayer0: { r: 0, g: 0, b: 0 },
-        colorPlayer1: { r: 255, g: 0, b: 0 },
-        colorPlayer2: { r: 0, g: 0, b: 255 },
-        colorCap: { r: 0, g: 0, b: 0 },
+        colorBackground: { r: 0, g: 191, b: 255, a: 1 },
+        colorGridNml: { r: 136, g: 136, b: 136, a: 1 },
+        colorGridBld: { r: 102, g: 102, b: 102, a: 1 },
+        colorGridEBld: { r: 68, g: 68, b: 68, a: 1 },
+        colorGridBorder: { r: 0, g: 0, b: 0, a: 1 },
+        colorPly: { r: 0, g: 0, b: 0, a: 1 },
+        colorPlayer0: { r: 0, g: 0, b: 0, a: 1 },
+        colorPlayer1: { r: 255, g: 0, b: 0, a: 1 },
+        colorPlayer2: { r: 0, g: 0, b: 255, a: 1 },
+        colorCap: { r: 0, g: 0, b: 0, a: 1 },
     },
 };
 
@@ -141,7 +157,7 @@ window.addEventListener("load", () => {
     let lastCsa = "";
     let lastColor = "";
     let lastYAxis = "";
-    let gameList: string[] = [];
+    let gameList: GameObj[] = [];
     const fetchGame = async (gameid: string, auto = false): Promise<void> => {
         if (lastFetch + 8500 > Date.now() && lastGame === gameid && auto) {
             return;
@@ -149,15 +165,8 @@ window.addEventListener("load", () => {
         if (lastGame !== gameid) {
             lastCsa = "";
         }
-        const numid = gameid.substring(gameid.length - 14);
-        const url = `https://mzr.jp/wdoor-latest/${numid.substring(
-            0,
-            4
-        )}/${numid.substring(4, 6)}/${numid.substring(6, 8)}/${gameid}.csa`;
-        const urlOrg = `http://wdoor.c.u-tokyo.ac.jp/shogi/view/${numid.substring(
-            0,
-            4
-        )}/${numid.substring(4, 6)}/${numid.substring(6, 8)}/${gameid}.csa`;
+        const url = gameUrl(gameid);
+        const urlOrg = gameUrlOrg(gameid);
         const csaPromise = await fetch(url);
         const csa = await csaPromise.text();
         const player = JKFPlayer.parseCSA(csa);
@@ -192,16 +201,97 @@ window.addEventListener("load", () => {
             .select<HTMLOptionElement>("select.kifulist option:last-child")
             .node()?.value;
         graphdiv.selectAll("*").remove();
+        // 時間フォーマット
         const timeFmt = (v: ITimeFormat): string =>
             (v.h ? `${v.h}:` + `0${v.m}:`.slice(-3) : `${v.m}:`) +
             `0${v.s}`.slice(-2);
+        // gameid から持ち時間読み取り
+        const timeManMatch = gameid.match(
+            /^[\w.-]+\+[\w.-]+-(\d+)-(\d+)(F)?\+/
+        );
+        const timeMan: TimeMan = timeManMatch
+            ? {
+                  base: Number.parseInt(timeManMatch[1]),
+                  increment:
+                      timeManMatch[3] === "F"
+                          ? Number.parseInt(timeManMatch[2])
+                          : 0,
+                  byoyomi:
+                      timeManMatch[3] === "F"
+                          ? 0
+                          : Number.parseInt(timeManMatch[2]),
+              }
+            : {
+                  base: 0,
+                  increment: 0,
+                  byoyomi: 0,
+              };
+        const remainTimeSec = (
+            i: number,
+            v: { now: ITimeFormat; total: ITimeFormat }
+        ): number => {
+            const limit =
+                timeMan.base + timeMan.increment * (Math.max(i - 1, 0) >> 1);
+            const now = 3600 * (v.now.h ?? 0) + 60 * v.now.m + v.now.s;
+            const total = 3600 * (v.total.h ?? 0) + 60 * v.total.m + v.total.s;
+            return Math.max(limit - total, -now) + timeMan.byoyomi;
+        };
+        const remainTimeStr = (
+            i: number,
+            v: { now: ITimeFormat; total: ITimeFormat }
+        ): string => {
+            const remain = Math.max(remainTimeSec(i, v), 0);
+            const h = Math.floor(remain / 3600);
+            const m = Math.floor((remain - 3600 * h) / 60);
+            const s = remain - 3600 * h - 60 * m;
+            return timeFmt({ h, m, s });
+        };
+
+        const maxPly = Math.max(
+            player.kifu.moves.length -
+                (player.kifu.moves[player.kifu.moves.length - 1].special
+                    ? 2
+                    : 1),
+            50
+        );
+        const graphWidth = Math.max(
+            player.kifu.moves.length -
+                (player.kifu.moves[player.kifu.moves.length - 1].special
+                    ? 1
+                    : 0),
+            50
+        );
+
         doWrite(
             graphdiv.append("div"),
             Object.assign<
                 Partial<SvgScoreGraphProp>,
+                Partial<SvgScoreGraphProp>,
                 Partial<SvgScoreGraphProp> | undefined,
                 Partial<SvgScoreGraphProp> | undefined
             >(
+                {
+                    maxPly,
+                    width: graphWidth,
+                    height: 48 * (graphWidth / 256),
+                    pad: graphWidth / 256,
+                    capPad: 1.5 * (graphWidth / 256),
+                    lWidthNml: 0.06 * (graphWidth / 256),
+                    lWidthBld: 0.18 * (graphWidth / 256),
+                    lWidthBorder: 0.24 * (graphWidth / 256),
+                    lWidthScore: 0.24 * (graphWidth / 256),
+                    lWidthTime: 0.12 * (graphWidth / 256),
+                    scaleLength: 1.5 * (graphWidth / 256),
+                    scalePad: 2 * (graphWidth / 256),
+                    cRadiusScore: 0.8 * Math.min(graphWidth / 128, 1),
+                    fSizeLw: 4 * (graphWidth / 256),
+                    fSizeLh: 5.25 * (graphWidth / 256),
+                    fSizeRw: 4 * (graphWidth / 256),
+                    fSizeRh: 3.5 * (graphWidth / 256),
+                    fSizeBw: 4 * (graphWidth / 256),
+                    fSizeBh: 5.5 * (graphWidth / 256),
+                    fSizeCap: graphWidth / Math.max(gameid.length, 64),
+                },
                 {
                     score: player.kifu.moves.map((v) =>
                         v.comments
@@ -218,9 +308,9 @@ window.addEventListener("load", () => {
                                     ? `${i}${JKFPlayer.moveToReadableKifu(v)}`
                                     : "",
                                 v.time
-                                    ? `${timeFmt(v.time.now)} / ${timeFmt(
+                                    ? `${timeFmt(v.time.now)} / 累計 ${timeFmt(
                                           v.time.total
-                                      )}`
+                                      )} / 残り ${remainTimeStr(i, v.time)}`
                                     : "",
                             ]
                                 .filter((s) => s)
@@ -229,6 +319,11 @@ window.addEventListener("load", () => {
                             .filter((s) => s)
                             .concat(v.comments ?? [])
                             .join("\n")
+                    ),
+                    timePar: player.kifu.moves.map((v, i) =>
+                        v.time
+                            ? remainTimeSec(i, v.time) / timeMan.base
+                            : Number.NaN
                     ),
                     caption: gameid,
                     capLink: urlOrg,
@@ -253,6 +348,7 @@ window.addEventListener("load", () => {
             .attr("size", "90")
             .attr("maxlength", "160")
             .attr("readonly", "")
+            .attr("class", "sfen")
             .property(
                 "value",
                 "sfen " +
@@ -267,6 +363,13 @@ window.addEventListener("load", () => {
         const boarddiv = graphdiv.append("div").attr("id", "boarddiv");
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (window as any).KifuForJS.loadString(csa, "boarddiv");
+        boarddiv
+            .select<HTMLButtonElement>("button[class=dl]")
+            .attr("disabled", false)
+            .property("disabled", false)
+            .on("click", () => {
+                window.open(url, "_blank");
+            });
         if (lastGame !== gameid || lastPly === lastMaxPly) {
             boarddiv
                 .select<HTMLButtonElement>("button[data-go=Infinity]")
@@ -282,31 +385,58 @@ window.addEventListener("load", () => {
                     detail: {},
                 });
         }
-        const par = graphdiv.append("p");
-        player.kifu.moves.forEach((v, i) => {
-            if (i !== 0) {
-                par.append("span")
-                    .attr("style", "white-space:nowrap")
-                    .attr(
-                        "title",
-                        (v.time
-                            ? [
-                                  timeFmt(v.time.now) +
-                                      " / " +
-                                      timeFmt(v.time.total),
-                              ]
-                            : []
-                        )
-                            .concat(v.comments ?? [])
-                            .join("\n")
-                    )
-                    .text(`${i}${JKFPlayer.moveToReadableKifu(v)}`);
-                par.append("span").text(" ");
-                if (v.comments?.some((str) => str.startsWith("$END_TIME:"))) {
-                    graphdiv.append("pre").text(v.comments?.join("\n"));
-                }
+        if (kifuVisible) {
+            const par = graphdiv.append("p");
+            if (player.kifu.header["棋戦"]) {
+                par.append("span").text(
+                    `$EVENT: ${player.kifu.header["棋戦"]}`
+                );
+                par.append("br");
             }
-        });
+            if (player.kifu.header["開始日時"]) {
+                par.append("span").text(
+                    `$START_TIME: ${player.kifu.header["開始日時"]}`
+                );
+                par.append("br");
+            }
+            if (player.kifu.header["先手"]) {
+                par.append("span").text(`☗${player.kifu.header["先手"]}`);
+                par.append("br");
+            }
+            if (player.kifu.header["後手"]) {
+                par.append("span").text(`☖${player.kifu.header["後手"]}`);
+                par.append("br");
+            }
+            player.kifu.moves.forEach((v, i) => {
+                if (i !== 0) {
+                    par.append("span")
+                        .attr("style", "white-space:nowrap")
+                        .attr(
+                            "title",
+                            (v.time
+                                ? [
+                                      `${timeFmt(v.time.now)} / 累計 ${timeFmt(
+                                          v.time.total
+                                      )} / 残り ${remainTimeStr(i, v.time)}`,
+                                  ]
+                                : []
+                            )
+                                .concat(v.comments ?? [])
+                                .join("\n")
+                        )
+                        .text(`${i}${JKFPlayer.moveToReadableKifu(v)}`);
+                    par.append("span").text(" ");
+                    if (
+                        v.comments?.some((str) => str.startsWith("$END_TIME:"))
+                    ) {
+                        graphdiv
+                            .append("pre")
+                            .attr("class", "reason")
+                            .text(v.comments?.join("\n"));
+                    }
+                }
+            });
+        }
         if (
             !player.kifu.moves.some((v) =>
                 v.comments?.some((str) => str.startsWith("$END_TIME:"))
@@ -317,26 +447,20 @@ window.addEventListener("load", () => {
                 fetchGame(selectGame.property("value"), true);
             }, 10000);
         }
-        if (!gameList.includes(gameid)) {
+        if (!gameList.map((o) => o.gameId).includes(gameid)) {
             gameList = gameList
-                .concat(gameid)
-                .filter((x, i, self) => self.indexOf(x) === i)
+                .concat({ gameId: gameid, gameName: gameid })
                 .sort(
                     (a, b) =>
-                        parseFloat(a.substring(a.length - 14)) -
-                        parseFloat(b.substring(b.length - 14))
+                        parseFloat(a.gameId.substring(a.gameId.length - 14)) -
+                        parseFloat(b.gameId.substring(b.gameId.length - 14))
                 );
             selectGame.selectAll("*").remove();
-            gameList.forEach((gameid) => {
-                const shortGameId = gameid.startsWith(
-                    "wdoor+floodgate-300-10F+"
-                )
-                    ? gameid.substring(24)
-                    : gameid;
+            gameList.forEach((o) => {
                 selectGame
                     .append("option")
-                    .attr("value", gameid)
-                    .text(shortGameId);
+                    .attr("value", o.gameId)
+                    .text(o.gameName);
             });
             selectGame.property("value", gameid);
         }
@@ -347,44 +471,35 @@ window.addEventListener("load", () => {
         lastYAxis = yaxis;
     };
     const listLoad = async (): Promise<void> => {
-        const logPromise = await fetch(
-            "https://mzr.jp/wdoor-latest/shogi-server.log"
-        );
+        const logPromise = await fetch(gameUrlList);
         const log = await logPromise.text();
         gameList = gameList
-            .concat(
-                log
-                    .split("\n")
-                    .map(
-                        (s) =>
-                            (s.match(
-                                /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d \[INFO\] game (?:started|finished) ((?:[\w.-]+\+){4}\d+)/
-                            ) ?? { 1: "" })[1]
-                    )
-                    .filter((s) => s)
+            .concat(gameLogParser(log))
+            .filter(
+                (x, i, self) =>
+                    self.map((s) => s.gameId).lastIndexOf(x.gameId) === i
             )
-            .filter((x, i, self) => self.indexOf(x) === i)
             .sort(
                 (a, b) =>
-                    parseFloat(a.substring(a.length - 14)) -
-                    parseFloat(b.substring(b.length - 14))
+                    parseFloat(a.gameId.substring(a.gameId.length - 14)) -
+                    parseFloat(b.gameId.substring(b.gameId.length - 14))
             );
         selectGame.selectAll("*").remove();
-        gameList.forEach((gameid) => {
-            const shortGameId = gameid.startsWith("wdoor+floodgate-300-10F+")
-                ? gameid.substring(24)
-                : gameid;
-            selectGame.append("option").attr("value", gameid).text(shortGameId);
+        gameList.forEach((o) => {
+            selectGame
+                .append("option")
+                .attr("value", o.gameId)
+                .text(o.gameName);
         });
         const gameIdHash = getGameIdHash();
         if (gameIdHash) {
             selectGame.property("value", gameIdHash);
             fetchGame(gameIdHash);
         } else if (gameList.length) {
-            const lastGameIdList = gameList[gameList.length - 1];
-            window.location.hash = `#${lastGameIdList}`;
-            selectGame.property("value", lastGameIdList);
-            fetchGame(lastGameIdList);
+            const lastGameId = gameList[gameList.length - 1].gameId;
+            window.location.hash = `#${lastGameId}`;
+            selectGame.property("value", lastGameId);
+            fetchGame(lastGameId);
         }
     };
     selectGame.on("change", () => {

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width"/>
+<title>denryusen - <%= htmlWebpackPlugin.options.title %></title>
+<style>
+.kifuforjs .players .mochi .tebanname { overflow: hidden; }
+@media only screen and (max-device-width: 800px) {
+    #scoregraph svg.scoregraph, #scoregraph input.sfen, #scoregraph pre.reason { width: 570px; overflow: scroll; }
+}
+</style>
+<script type="text/javascript">
+var denryuUrlBase = "https://mzr.jp/denryusen/dr1_test1";
+var denryuOrgUrlBase = "http://www.golan.sakura.ne.jp/denryusen/dr1_test1";
+var gameUrl = function(gameid) { return denryuUrlBase + "/kifufiles/" + gameid + ".csa"; };
+var gameUrlOrg = function(gameid) { return denryuOrgUrlBase + "/kifufiles/" + gameid + ".csa"; };
+var gameUrlList = denryuUrlBase + "/csalist.php";
+var gameLogParser = function(log) {
+    return log
+        .split("\n")
+        .map((s) =>
+            s.match(
+                /^<div><a href="\.\/kifufiles\/((?:[\w.-]+\+){4}\d+)\.csa" *>([^<]+)<\/a>/
+            )
+        )
+        .filter((s) => s)
+        .map((s) => ({
+            gameId: s[1],
+            gameName: s[2]
+                .replace(/▲/g, "☗")
+                .replace(/△/g, "☖"),
+        }));
+};
+</script>
+<script type="text/javascript" src="./kifu-for-js-2.0.0.min.js"></script>
+</head>
+<body><script type="text/javascript" src="./main.js"></script></body>
+</html>

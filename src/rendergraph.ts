@@ -78,10 +78,11 @@ interface Mark {
     m: Line;
     l: Line;
 }
-interface Rgb {
+interface Rgba {
     r: number;
     g: number;
     b: number;
+    a: number;
 }
 export interface SvgScoreGraphProp {
     maxPly: number;
@@ -93,19 +94,24 @@ export interface SvgScoreGraphProp {
     lWidthBld: number;
     lWidthBorder: number;
     lWidthScore: number;
+    lWidthTime: number;
     scaleLength: number;
     scalePad: number;
     cRadiusScore: number;
-    colorBackground: Rgb;
-    colorGridNml: Rgb;
-    colorGridBld: Rgb;
-    colorGridEBld: Rgb;
-    colorGridBorder: Rgb;
-    colorPly: Rgb;
-    colorPlayer0: Rgb;
-    colorPlayer1: Rgb;
-    colorPlayer2: Rgb;
-    colorCap: Rgb;
+    colorBackground: Rgba;
+    colorGridNml: Rgba;
+    colorGridBld: Rgba;
+    colorGridEBld: Rgba;
+    colorGridBorder: Rgba;
+    colorPly: Rgba;
+    colorPlayer0: Rgba;
+    colorPlayer1: Rgba;
+    colorPlayer2: Rgba;
+    colorCap: Rgba;
+    colorTimeLineB: Rgba;
+    colorTimeFillB: Rgba;
+    colorTimeLineW: Rgba;
+    colorTimeFillW: Rgba;
     fSizeLw: number;
     fSizeLh: number;
     fSizeRw: number;
@@ -121,6 +127,7 @@ export interface SvgScoreGraphProp {
     bType: XScale;
     score: number[];
     comment: string[];
+    timePar: number[];
     caption: string;
     capLink: string;
     plyCallback: (ply: number) => void;
@@ -729,6 +736,7 @@ function writeSvg<GElement extends BaseType>(
         lWidthBld,
         lWidthBorder,
         lWidthScore,
+        lWidthTime,
         scaleLength,
         scalePad,
         cRadiusScore,
@@ -742,6 +750,10 @@ function writeSvg<GElement extends BaseType>(
         colorPlayer1,
         colorPlayer2,
         colorCap,
+        colorTimeLineB,
+        colorTimeFillB,
+        colorTimeLineW,
+        colorTimeFillW,
         fSizeLw,
         fSizeLh,
         fSizeRw,
@@ -757,6 +769,7 @@ function writeSvg<GElement extends BaseType>(
         bType,
         score,
         comment,
+        timePar,
         caption,
         capLink,
         plyCallback,
@@ -971,26 +984,28 @@ function writeSvg<GElement extends BaseType>(
         }
         return res;
     })();
-    const rgb = (v: { r: number; g: number; b: number }): string => {
+    // 色値→文字列変換
+    const rgba = (v: Rgba): string => {
         const a = [v.r, v.g, v.b].map((c) => Math.round(c));
-        return (
-            "#" +
-            a
-                .map((c) =>
-                    a.some((n) => n % 17 !== 0)
-                        ? (c + 256).toString(16).substr(1)
-                        : (c / 17).toString(16)
-                )
-                .join("")
-        );
+        return v.a === 1
+            ? `#${a
+                  .map((c) =>
+                      a.some((n) => n % 17 !== 0)
+                          ? (c + 256).toString(16).substr(1)
+                          : (c / 17).toString(16)
+                  )
+                  .join("")}`
+            : `rgba(${a[0]},${a[1]},${a[2]},${fix(v.a)})`;
     };
+    // 縦軸→色変換
     const vRgb = (v: number): string => {
         const a = (e: "r" | "g" | "b"): number =>
             colorPlayer0[e] * (1 - Math.abs(v)) +
             colorPlayer1[e] * Math.max(v, 0) +
             colorPlayer2[e] * Math.max(-v, 0);
-        return rgb({ r: a("r"), g: a("g"), b: a("b") });
+        return rgba({ r: a("r"), g: a("g"), b: a("b"), a: 1 });
     };
+    // 余白計算
     const lPad =
         Math.max(
             lType === 1
@@ -1024,6 +1039,7 @@ function writeSvg<GElement extends BaseType>(
             lType === 1 || lType === 2 ? (fSizeLh * gryphHeight) / 2 : 0,
             rType === 1 || rType === 2 ? (fSizeRh * gryphHeight) / 2 : 0
         ) + pad;
+    // SVG画像親要素
     const svg = parlent
         .append("svg")
         .attr("xmlns", "http://www.w3.org/2000/svg")
@@ -1033,7 +1049,9 @@ function writeSvg<GElement extends BaseType>(
             `${fix(-lPad)} ${fix(-tPad - hheight)} ${fix(
                 width + lPad + rPad
             )} ${fix(height + tPad + bPad)}`
-        );
+        )
+        .attr("class", "scoregraph");
+    // 埋め込み文字グリフ
     const defs = svg.append("defs");
     Object.keys(gryphData).forEach((char) => {
         const data = gryphData[char];
@@ -1046,20 +1064,50 @@ function writeSvg<GElement extends BaseType>(
                 .attr("data-font-license", data.f.l);
         }
     });
+    // 背景塗り潰し
     svg.append("rect")
         .attr("x", fix(-lPad))
         .attr("y", fix(-tPad - hheight))
         .attr("width", fix(width + lPad + rPad))
         .attr("height", fix(height + tPad + bPad))
-        .attr("fill", rgb(colorBackground));
+        .attr("fill", rgba(colorBackground));
+    // 残り持ち時間推移の描写
+    const pathTime = [0, 1].map((t) =>
+        timePar
+            .map((v, i) =>
+                i < 1 || i % 2 === t || Number.isNaN(v)
+                    ? ""
+                    : `L${i},${fix(
+                          (t * 2 - 1) * hheight * Math.min(Math.max(v, 0), 1)
+                      )}`
+            )
+            .join("")
+    );
+    svg.append("path")
+        .attr("d", `M0,0V${fix(-hheight)}${pathTime[0]}V0z`)
+        .attr("fill", rgba(colorTimeFillB));
+    svg.append("path")
+        .attr("d", `M0,0V${fix(hheight)}${pathTime[1]}V0z`)
+        .attr("fill", rgba(colorTimeFillW));
+    svg.append("path")
+        .attr("d", `M0,${fix(-hheight)}${pathTime[0]}`)
+        .attr("stroke", rgba(colorTimeLineB))
+        .attr("stroke-width", fix(lWidthTime))
+        .attr("fill", "none");
+    svg.append("path")
+        .attr("d", `M0,${fix(hheight)}${pathTime[1]}`)
+        .attr("stroke", rgba(colorTimeLineW))
+        .attr("stroke-width", fix(lWidthTime))
+        .attr("fill", "none");
+    // 文字・目盛類の配置
     const charG = svg.append("g");
     const scaleG = svg.append("g");
     let pathEBold = "";
     let pathBld = "";
     let pathNml = "";
-    let pathBorder = `M0,${-hheight}h${width}v${height}h${-width}z`;
+    let pathBorder = `M0,${fix(-hheight)}H${width}V${fix(hheight)}H0z`;
     hsc.forEach((e) => {
-        const s = `M${e.v},${-hheight}v${height}`;
+        const s = `M${fix(e.v)},${fix(-hheight)}V${fix(hheight)}`;
         switch (e.l) {
             case Line.Nml:
                 pathNml += s;
@@ -1078,7 +1126,7 @@ function writeSvg<GElement extends BaseType>(
                 if (isFinite(e.v)) {
                     const v = scoreEval(e.v);
                     const y = fix(-hheight * v);
-                    const s = `M0,${y}h${width}`;
+                    const s = `M0,${y}H${width}`;
                     switch (e.l) {
                         case Line.Nml:
                             pathNml += s;
@@ -1097,7 +1145,7 @@ function writeSvg<GElement extends BaseType>(
             vper.forEach((e) => {
                 const v = scoreEval(vPerScore(e.v));
                 const y = fix(-hheight * v);
-                const s = `M0,${y}h${width}`;
+                const s = `M0,${y}H${width}`;
                 switch (e.l) {
                     case Line.Nml:
                         pathNml += s;
@@ -1125,7 +1173,9 @@ function writeSvg<GElement extends BaseType>(
                             .attr("xlink:href", "#" + strSubGryphId(str, i))
                             .attr(
                                 "transform",
-                                `matrix(${fSizeLw} 0 0 ${fSizeLh} ${fix(
+                                `matrix(${fix(fSizeLw)} 0 0 ${fix(
+                                    fSizeLh
+                                )} ${fix(
                                     -fSizeLw *
                                         (strPxWidth(str.substring(i + 1)) +
                                             strPxWidth(c) / 2) -
@@ -1137,17 +1187,19 @@ function writeSvg<GElement extends BaseType>(
                 if (e.m !== Line.None) {
                     scaleG
                         .append("path")
-                        .attr("d", `M0,${y}h${-scaleLength}`)
+                        .attr("d", `M0,${y}H${-scaleLength}`)
                         .attr("stroke", vRgb(v))
                         .attr(
                             "stroke-width",
-                            e.m === Line.EBld
-                                ? lWidthBorder
-                                : e.m === Line.Bld
-                                ? lWidthBld
-                                : e.m === Line.Nml
-                                ? lWidthNml
-                                : 0
+                            fix(
+                                e.m === Line.EBld
+                                    ? lWidthBorder
+                                    : e.m === Line.Bld
+                                    ? lWidthBld
+                                    : e.m === Line.Nml
+                                    ? lWidthNml
+                                    : 0
+                            )
                         );
                 }
             });
@@ -1164,7 +1216,9 @@ function writeSvg<GElement extends BaseType>(
                             .attr("xlink:href", "#" + strSubGryphId(str, i))
                             .attr(
                                 "transform",
-                                `matrix(${fSizeLw} 0 0 ${fSizeLh} ${fix(
+                                `matrix(${fix(fSizeLw)} 0 0 ${fix(
+                                    fSizeLh
+                                )} ${fix(
                                     -fSizeLw *
                                         (strPxWidth(str.substring(i)) -
                                             strPxWidth(c) / 2) -
@@ -1176,17 +1230,19 @@ function writeSvg<GElement extends BaseType>(
                 if (e.m !== Line.None) {
                     scaleG
                         .append("path")
-                        .attr("d", `M0,${y}h${-scaleLength}`)
+                        .attr("d", `M0,${y}H${fix(-scaleLength)}`)
                         .attr("stroke", vRgb(v))
                         .attr(
                             "stroke-width",
-                            e.m === Line.EBld
-                                ? lWidthBorder
-                                : e.m === Line.Bld
-                                ? lWidthBld
-                                : e.m === Line.Nml
-                                ? lWidthNml
-                                : 0
+                            fix(
+                                e.m === Line.EBld
+                                    ? lWidthBorder
+                                    : e.m === Line.Bld
+                                    ? lWidthBld
+                                    : e.m === Line.Nml
+                                    ? lWidthNml
+                                    : 0
+                            )
                         );
                 }
             });
@@ -1205,7 +1261,9 @@ function writeSvg<GElement extends BaseType>(
                             .attr("xlink:href", "#" + strSubGryphId(str, i))
                             .attr(
                                 "transform",
-                                `matrix(${fSizeRw} 0 0 ${fSizeRh} ${fix(
+                                `matrix(${fix(fSizeRw)} 0 0 ${fix(
+                                    fSizeRh
+                                )} ${fix(
                                     fSizeRw *
                                         (strPxWidth(str.substring(0, i)) +
                                             strPxWidth(c) / 2) +
@@ -1218,17 +1276,19 @@ function writeSvg<GElement extends BaseType>(
                 if (e.m !== Line.None) {
                     scaleG
                         .append("path")
-                        .attr("d", `M${width},${y}h${scaleLength}`)
+                        .attr("d", `M${width},${y}h${fix(scaleLength)}`)
                         .attr("stroke", vRgb(v))
                         .attr(
                             "stroke-width",
-                            e.m === Line.EBld
-                                ? lWidthBorder
-                                : e.m === Line.Bld
-                                ? lWidthBld
-                                : e.m === Line.Nml
-                                ? lWidthNml
-                                : 0
+                            fix(
+                                e.m === Line.EBld
+                                    ? lWidthBorder
+                                    : e.m === Line.Bld
+                                    ? lWidthBld
+                                    : e.m === Line.Nml
+                                    ? lWidthNml
+                                    : 0
+                            )
                         );
                 }
             });
@@ -1245,7 +1305,9 @@ function writeSvg<GElement extends BaseType>(
                             .attr("xlink:href", "#" + strSubGryphId(str, i))
                             .attr(
                                 "transform",
-                                `matrix(${fSizeRw} 0 0 ${fSizeRh} ${fix(
+                                `matrix(${fix(fSizeRw)} 0 0 ${fix(
+                                    fSizeRh
+                                )} ${fix(
                                     fSizeRw *
                                         (strPxWidth(str.substring(0, i)) +
                                             strPxWidth(c) / 2) +
@@ -1258,17 +1320,19 @@ function writeSvg<GElement extends BaseType>(
                 if (e.m !== Line.None) {
                     scaleG
                         .append("path")
-                        .attr("d", `M${width},${y}h${scaleLength}`)
+                        .attr("d", `M${width},${y}h${fix(scaleLength)}`)
                         .attr("stroke", vRgb(v))
                         .attr(
                             "stroke-width",
-                            e.m === Line.EBld
-                                ? lWidthBorder
-                                : e.m === Line.Bld
-                                ? lWidthBld
-                                : e.m === Line.Nml
-                                ? lWidthNml
-                                : 0
+                            fix(
+                                e.m === Line.EBld
+                                    ? lWidthBorder
+                                    : e.m === Line.Bld
+                                    ? lWidthBld
+                                    : e.m === Line.Nml
+                                    ? lWidthNml
+                                    : 0
+                            )
                         );
                 }
             });
@@ -1277,7 +1341,7 @@ function writeSvg<GElement extends BaseType>(
     switch (tType) {
         case XScale.Ply:
             {
-                const g = charG.append("g").attr("fill", rgb(colorPly));
+                const g = charG.append("g").attr("fill", rgba(colorPly));
                 hsc.forEach((e) => {
                     if (e.s) {
                         const str = `${e.v}`;
@@ -1286,22 +1350,26 @@ function writeSvg<GElement extends BaseType>(
                                 .attr("xlink:href", "#" + strSubGryphId(str, i))
                                 .attr(
                                     "transform",
-                                    `matrix(${fSizeBw} 0 0 ${fSizeBh} ${
+                                    `matrix(${fix(fSizeBw)} 0 0 ${fix(
+                                        fSizeBh
+                                    )} ${fix(
                                         e.v +
-                                        fSizeBw *
-                                            (strPxWidth(str.substring(0, i)) +
-                                                strPxWidth(c) / 2 -
-                                                strPxWidth(str) / 2)
-                                    } ${
+                                            fSizeBw *
+                                                (strPxWidth(
+                                                    str.substring(0, i)
+                                                ) +
+                                                    strPxWidth(c) / 2 -
+                                                    strPxWidth(str) / 2)
+                                    )} ${fix(
                                         -hheight -
-                                        (fSizeBh * gryphHeight) / 2 -
-                                        scalePad
-                                    })`
+                                            (fSizeBh * gryphHeight) / 2 -
+                                            scalePad
+                                    )})`
                                 );
                         });
-                        pathBorder += `M${e.v},${
+                        pathBorder += `M${e.v},${fix(
                             -hheight - scaleLength
-                        }v${scaleLength}`;
+                        )}v${fix(scaleLength)}`;
                     }
                 });
             }
@@ -1310,7 +1378,7 @@ function writeSvg<GElement extends BaseType>(
     switch (bType) {
         case XScale.Ply:
             {
-                const g = charG.append("g").attr("fill", rgb(colorPly));
+                const g = charG.append("g").attr("fill", rgba(colorPly));
                 hsc.forEach((e) => {
                     if (e.s) {
                         const str = `${e.v}`;
@@ -1319,48 +1387,55 @@ function writeSvg<GElement extends BaseType>(
                                 .attr("xlink:href", "#" + strSubGryphId(str, i))
                                 .attr(
                                     "transform",
-                                    `matrix(${fSizeBw} 0 0 ${fSizeBh} ${
+                                    `matrix(${fix(fSizeBw)} 0 0 ${fix(
+                                        fSizeBh
+                                    )} ${fix(
                                         e.v +
-                                        fSizeBw *
-                                            (strPxWidth(str.substring(0, i)) +
-                                                strPxWidth(c) / 2 -
-                                                strPxWidth(str) / 2)
-                                    } ${
+                                            fSizeBw *
+                                                (strPxWidth(
+                                                    str.substring(0, i)
+                                                ) +
+                                                    strPxWidth(c) / 2 -
+                                                    strPxWidth(str) / 2)
+                                    )} ${fix(
                                         hheight +
-                                        (fSizeBh * gryphHeight) / 2 +
-                                        scalePad
-                                    })`
+                                            (fSizeBh * gryphHeight) / 2 +
+                                            scalePad
+                                    )})`
                                 );
                         });
-                        pathBorder += `M${e.v},${hheight}v${scaleLength}`;
+                        pathBorder += `M${e.v},${fix(hheight)}v${fix(
+                            scaleLength
+                        )}`;
                     }
                 });
             }
             break;
     }
+    // 目盛の描写
     if (pathNml) {
         svg.append("path")
             .attr("d", pathNml)
-            .attr("stroke", rgb(colorGridNml))
-            .attr("stroke-width", lWidthNml);
+            .attr("stroke", rgba(colorGridNml))
+            .attr("stroke-width", fix(lWidthNml));
     }
     if (pathBld) {
         svg.append("path")
             .attr("d", pathBld)
-            .attr("stroke", rgb(colorGridBld))
-            .attr("stroke-width", lWidthBld);
+            .attr("stroke", rgba(colorGridBld))
+            .attr("stroke-width", fix(lWidthBld));
     }
     if (pathEBold) {
         svg.append("path")
             .attr("d", pathEBold)
-            .attr("stroke", rgb(colorGridEBld))
-            .attr("stroke-width", lWidthBorder);
+            .attr("stroke", rgba(colorGridEBld))
+            .attr("stroke-width", fix(lWidthBorder));
     }
     if (pathBorder) {
         svg.append("path")
             .attr("d", pathBorder)
-            .attr("stroke", rgb(colorGridBorder))
-            .attr("stroke-width", lWidthBorder)
+            .attr("stroke", rgba(colorGridBorder))
+            .attr("stroke-width", fix(lWidthBorder))
             .attr("fill", "none");
     }
     if (score.length) {
@@ -1381,14 +1456,14 @@ function writeSvg<GElement extends BaseType>(
             .append("path")
             .attr("d", pathA)
             .attr("fill", "none")
-            .attr("stroke", rgb(colorPlayer1))
-            .attr("stroke-width", `${lWidthScore}`);
+            .attr("stroke", rgba(colorPlayer1))
+            .attr("stroke-width", fix(lWidthScore));
         scoreG
             .append("path")
             .attr("d", pathB)
             .attr("fill", "none")
-            .attr("stroke", rgb(colorPlayer2))
-            .attr("stroke-width", `${lWidthScore}`);
+            .attr("stroke", rgba(colorPlayer2))
+            .attr("stroke-width", fix(lWidthScore));
         const scoreCircleG = scoreG.append("g");
         score.forEach((v, i) => {
             if (!isNaN(v)) {
@@ -1398,10 +1473,10 @@ function writeSvg<GElement extends BaseType>(
                 g.append("circle")
                     .attr("cx", i)
                     .attr("cy", y)
-                    .attr("r", cRadiusScore)
+                    .attr("r", fix(cRadiusScore))
                     .attr(
                         "fill",
-                        rgb(i % 2 === 1 ? colorPlayer1 : colorPlayer2)
+                        rgba(i % 2 === 1 ? colorPlayer1 : colorPlayer2)
                     )
                     .on("click", () => {
                         plyCallback(i);
@@ -1411,14 +1486,14 @@ function writeSvg<GElement extends BaseType>(
     }
     if (caption && fSizeCap) {
         svg.append("text")
-            .attr("x", width / 2)
-            .attr("y", -hheight - tCapBase)
+            .attr("x", fix(width / 2))
+            .attr("y", fix(-hheight - tCapBase))
             .attr("text-anchor", "middle")
-            .attr("font-size", `${fSizeCap}`)
-            .attr("fill", rgb(colorCap))
+            .attr("font-size", fix(fSizeCap))
+            .attr("fill", rgba(colorCap))
             .append("a")
             .attr("xlink:href", capLink ?? "")
-            .attr("style", `color:${rgb(colorCap)}`)
+            .attr("style", `color:${rgba(colorCap)}`)
             .attr("target", "_blank")
             .text(caption);
     }
@@ -1441,19 +1516,24 @@ export function doWrite<GElement extends BaseType>(
                 lWidthBld: 0.18,
                 lWidthBorder: 0.24,
                 lWidthScore: 0.36,
+                lWidthTime: 0.18,
                 scaleLength: 1.5,
                 scalePad: 2,
                 cRadiusScore: 0.8,
-                colorBackground: { r: 255, g: 255, b: 255 },
-                colorGridNml: { r: 170, g: 170, b: 170 },
-                colorGridBld: { r: 136, g: 136, b: 136 },
-                colorGridEBld: { r: 68, g: 68, b: 68 },
-                colorGridBorder: { r: 0, g: 0, b: 0 },
-                colorPly: { r: 0, g: 0, b: 0 },
-                colorPlayer0: { r: 0, g: 0, b: 0 },
-                colorPlayer1: { r: 255, g: 51, b: 0 },
-                colorPlayer2: { r: 0, g: 51, b: 255 },
-                colorCap: { r: 0, g: 0, b: 0 },
+                colorBackground: { r: 255, g: 255, b: 255, a: 1 },
+                colorGridNml: { r: 170, g: 170, b: 170, a: 1 },
+                colorGridBld: { r: 136, g: 136, b: 136, a: 1 },
+                colorGridEBld: { r: 68, g: 68, b: 68, a: 1 },
+                colorGridBorder: { r: 0, g: 0, b: 0, a: 1 },
+                colorPly: { r: 0, g: 0, b: 0, a: 1 },
+                colorPlayer0: { r: 0, g: 0, b: 0, a: 1 },
+                colorPlayer1: { r: 255, g: 51, b: 0, a: 1 },
+                colorPlayer2: { r: 0, g: 51, b: 255, a: 1 },
+                colorCap: { r: 0, g: 0, b: 0, a: 1 },
+                colorTimeLineB: { r: 255, g: 128, b: 128, a: 1 },
+                colorTimeFillB: { r: 255, g: 128, b: 128, a: 0.25 },
+                colorTimeLineW: { r: 128, g: 128, b: 255, a: 1 },
+                colorTimeFillW: { r: 128, g: 128, b: 255, a: 0.25 },
                 fSizeLw: 4,
                 fSizeLh: 5.25,
                 fSizeRw: 4,
@@ -1469,6 +1549,7 @@ export function doWrite<GElement extends BaseType>(
                 bType: XScale.Ply,
                 score: [],
                 comment: [],
+                timePar: [],
                 caption: "",
                 capLink: "",
                 plyCallback: () => undefined,

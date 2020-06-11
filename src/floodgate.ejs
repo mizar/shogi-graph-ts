@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width"/>
+<title>floodgate - <%= htmlWebpackPlugin.options.title %></title>
+<style>
+.kifuforjs .players .mochi .tebanname { overflow: hidden; }
+@media only screen and (max-device-width: 800px) {
+    #scoregraph svg.scoregraph, #scoregraph input.sfen, #scoregraph pre.reason { width: 570px; overflow: scroll; }
+}
+</style>
+<script type="text/javascript">
+var gameUrl = function(gameid) {
+    return "https://mzr.jp/wdoor-latest/" +
+    gameid.substring(
+        gameid.length - 14,
+        gameid.length - 10
+    ) +
+    "/" +
+    gameid.substring(
+        gameid.length - 10,
+        gameid.length - 8
+    ) +
+    "/" +
+    gameid.substring(
+        gameid.length - 8,
+        gameid.length - 6
+    ) +
+    "/" +
+    gameid +
+    ".csa";
+};
+var gameUrlOrg = function(gameid) {
+    return "http://wdoor.c.u-tokyo.ac.jp/shogi/view/" +
+    gameid.substring(
+        gameid.length - 14,
+        gameid.length - 10
+    ) +
+    "/" +
+    gameid.substring(
+        gameid.length - 10,
+        gameid.length - 8
+    ) +
+    "/" +
+    gameid.substring(
+        gameid.length - 8,
+        gameid.length - 6
+    ) +
+    "/" +
+    gameid +
+    ".csa";
+};
+var gameUrlList = "https://mzr.jp/wdoor-latest/shogi-server.log";
+var gameLogParser = function(log) {
+    return log
+        .split("\n")
+        .map(
+            (s) =>
+                (s.match(
+                    /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d \[INFO\] game (?:started|finished) ((?:[\w.-]+\+){4}\d+)/
+                ) || { 1: "" })[1]
+        )
+        .filter((s) => s)
+        .map((s) =>
+            s.startsWith("wdoor+floodgate-300-10F+")
+                ? { gameId: s, gameName: s.substring(24) }
+                : { gameId: s, gameName: s }
+        );
+};
+var kifuVisible = true;
+</script>
+<script type="text/javascript" src="./kifu-for-js-2.0.0.min.js"></script>
+</head>
+<body><script type="text/javascript" src="./main.js"></script></body>
+</html>

@@ -27,7 +27,15 @@ module.exports = (env) => ({
         [
             new HtmlWebPackPlugin({
                 title: name,
-                template: "./src/index.ejs",
+                template: "./src/floodgate.ejs",
+                chunks: ["floodgate"],
+                filename: "floodgate.html",
+            }),
+            new HtmlWebPackPlugin({
+                title: name,
+                template: "./src/denryusen.ejs",
+                chunks: ["denryusen"],
+                filename: "denryusen.html",
             }),
         ],
         env && env.production
