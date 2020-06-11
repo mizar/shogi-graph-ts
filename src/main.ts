@@ -26,6 +26,7 @@ declare const gameUrl: (gameid: string) => string;
 declare const gameUrlOrg: (gameid: string) => string;
 declare const gameUrlList: string;
 declare const gameLogParser: (log: string) => GameObj[];
+declare const sfenVisible: boolean;
 declare const kifuVisible: boolean;
 
 const colorSet: { [c: string]: Partial<SvgScoreGraphProp> | undefined } = {
@@ -140,7 +141,7 @@ window.addEventListener("load", () => {
     iconSet(copyButton, copySvg);
     const saveButton = body
         .append("button")
-        .attr("title", "形勢グラフをクリップボードにコピー");
+        .attr("title", "形勢グラフをクリップボードにコピー(Chromeのみ対応)");
     iconSet(saveButton, saveSvg);
     const redoButton = body
         .append("button")
@@ -341,25 +342,29 @@ window.addEventListener("load", () => {
                 yaxisSet[yaxis]
             )
         );
-        const sfeninput = graphdiv
-            .append("div")
-            .append("input")
-            .attr("type", "text")
-            .attr("size", "90")
-            .attr("maxlength", "160")
-            .attr("readonly", "")
-            .attr("class", "sfen")
-            .property(
-                "value",
-                "sfen " +
-                    player.shogi.toSFENString(
-                        player.kifu.moves.length -
-                            (player.kifu.moves.some((e) => e.special) ? 1 : 0)
-                    )
-            )
-            .on("focus", () => {
-                sfeninput.node()?.select();
-            });
+        if (sfenVisible) {
+            const sfeninput = graphdiv
+                .append("div")
+                .append("input")
+                .attr("type", "text")
+                .attr("size", "90")
+                .attr("maxlength", "160")
+                .attr("readonly", "")
+                .attr("class", "sfen")
+                .property(
+                    "value",
+                    "sfen " +
+                        player.shogi.toSFENString(
+                            player.kifu.moves.length -
+                                (player.kifu.moves.some((e) => e.special)
+                                    ? 1
+                                    : 0)
+                        )
+                )
+                .on("focus", () => {
+                    sfeninput.node()?.select();
+                });
+        }
         const boarddiv = graphdiv.append("div").attr("id", "boarddiv");
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (window as any).KifuForJS.loadString(csa, "boarddiv");
