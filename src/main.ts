@@ -391,7 +391,7 @@ window.addEventListener("load", () => {
                 });
         }
         if (kifuVisible) {
-            const par = graphdiv.append("p");
+            const par = graphdiv.append("p").attr("class", "kifu");
             if (player.kifu.header["棋戦"]) {
                 par.append("span").text(
                     `$EVENT: ${player.kifu.header["棋戦"]}`
