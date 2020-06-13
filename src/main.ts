@@ -22,12 +22,15 @@ interface TimeMan {
     byoyomi: number;
 }
 
-declare const gameUrl: (gameid: string) => string;
-declare const gameUrlOrg: (gameid: string) => string;
-declare const gameUrlList: string;
-declare const gameLogParser: (log: string) => GameObj[];
-declare const sfenVisible: boolean;
-declare const kifuVisible: boolean;
+declare const gameBoardProp: {
+    graphHScale?: number;
+    url: (gameid: string) => string;
+    urlOrg: (gameid: string) => string;
+    urlList: string;
+    logParser: (log: string) => GameObj[];
+    sfenVisible?: boolean;
+    kifuVisible?: boolean;
+};
 
 const colorSet: { [c: string]: Partial<SvgScoreGraphProp> | undefined } = {
     white: {
@@ -99,115 +102,153 @@ function getGameIdHash(): string {
     return found ? found[1] : "";
 }
 
-window.addEventListener("load", () => {
-    const body = select("body");
-    const selectGame = body.append("select").attr("id", "selectgame");
-    const selectColor = body.append("select").attr("id", "selectcolor");
-    selectColor.append("option").attr("value", "white").text("white");
-    selectColor.append("option").attr("value", "black").text("black");
-    selectColor.append("option").attr("value", "aqua").text("aqua");
-    const selectYAxis = body.append("select").attr("id", "selectyaxis");
-    selectYAxis
+function iconSet<G extends BaseType>(
+    button: Selection<G, unknown, HTMLElement, unknown>,
+    src: string
+): void {
+    button
+        .append("img")
+        .attr("src", src)
         .attr(
-            "title",
-            "{\n  'pSigmoid': (score) => Math.asin(Math.atan(score * ((Math.PI * Math.PI) / 4800)) * (2 / Math.PI)) * (2 / Math.PI),\n  'atan': (score) => Math.atan(score * (Math.PI / 2400)) * (2 / Math.PI),\n  'tanh': (score) => Math.tanh(score / 1200),\n  'linear1000': (score) => Math.min(Math.max(score / 1000, -1), +1),\n  'linear1200': (score) => Math.min(Math.max(score / 1200, -1), +1),\n  'linear2000': (score) => Math.min(Math.max(score / 2000, -1), +1),\n  'linear3000': (score) => Math.min(Math.max(score / 3000, -1), +1),\n}"
+            "style",
+            "font-size:inherit;width:1em;height:1em;vertical-align:-.125em"
         )
-        .append("option")
-        .attr("value", "pseudoSigmoid")
-        .text("pSigmoid");
-    selectYAxis.append("option").attr("value", "atan").text("atan");
-    selectYAxis.append("option").attr("value", "tanh").text("tanh");
-    selectYAxis.append("option").attr("value", "linear1000").text("linear1000");
-    selectYAxis.append("option").attr("value", "linear1200").text("linear1200");
-    selectYAxis.append("option").attr("value", "linear2000").text("linear2000");
-    selectYAxis.append("option").attr("value", "linear3000").text("linear3000");
-    const iconSet = <G extends BaseType>(
-        button: Selection<G, unknown, HTMLElement, unknown>,
-        src: string
-    ): void => {
-        button
-            .append("img")
-            .attr("src", src)
-            .attr(
-                "style",
-                "font-size:inherit;width:1em;height:1em;vertical-align:-.125em"
-            )
-            .attr("data-icon-origin", "https://github.com/tabler/tabler-icons")
-            .attr("data-icon-license", "MIT");
-    };
-    const copyButton = body
-        .append("button")
-        .attr("title", "現在表示中の棋譜をクリップボードにコピー");
-    iconSet(copyButton, copySvg);
-    const saveButton = body
-        .append("button")
-        .attr("title", "形勢グラフをクリップボードにコピー(Chromeのみ対応)");
-    iconSet(saveButton, saveSvg);
-    const redoButton = body
-        .append("button")
-        .attr("title", "現在表示中の棋譜を再読み込み");
-    iconSet(redoButton, rotateSvg);
-    const reloadButton = body
-        .append("button")
-        .attr("title", "棋譜リストの再読み込み");
-    iconSet(reloadButton, refreshSvg);
+        .attr("data-icon-origin", "https://github.com/tabler/tabler-icons")
+        .attr("data-icon-license", "MIT");
+}
 
-    const graphdiv = body.append("div").attr("id", "scoregraph");
-    let lastFetch = NaN;
-    let lastGame = "";
-    let lastCsa = "";
-    let lastColor = "";
-    let lastYAxis = "";
-    let gameList: GameObj[] = [];
-    const fetchGame = async (gameid: string, auto = false): Promise<void> => {
-        if (lastFetch + 8500 > Date.now() && lastGame === gameid && auto) {
+class GameBoardBlock {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    graphDiv: Selection<HTMLDivElement, unknown, HTMLElement, any>;
+    gameId = "";
+    color = "";
+    yaxis = "";
+    lastFetch = NaN;
+    lastGame = "";
+    lastCsa = "";
+    enabled = true;
+    constructor(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        graphDiv: Selection<HTMLDivElement, unknown, HTMLElement, any>
+    ) {
+        this.graphDiv = graphDiv;
+    }
+    async fetchGame(force = true): Promise<void> {
+        if (
+            !this.enabled ||
+            (this.lastFetch + 8500 > Date.now() &&
+                this.lastGame === this.gameId &&
+                !force)
+        ) {
             return;
         }
-        if (lastGame !== gameid) {
-            lastCsa = "";
+        if (this.lastGame !== this.gameId) {
+            this.lastCsa = "";
         }
-        const url = gameUrl(gameid);
-        const urlOrg = gameUrlOrg(gameid);
+        const url = gameBoardProp.url(this.gameId);
+        const urlOrg = gameBoardProp.urlOrg(this.gameId);
         const csaPromise = await fetch(url);
         const csa = await csaPromise.text();
         const player = JKFPlayer.parseCSA(csa);
-        const color = body.select("#selectcolor").property("value");
-        const yaxis = body.select("#selectyaxis").property("value");
         player.goto(Infinity);
-        if (
-            lastGame === gameid &&
-            lastCsa === csa &&
-            lastColor === color &&
-            lastYAxis === yaxis
-        ) {
-            lastFetch = Date.now();
+        if (!force && this.lastGame === this.gameId && this.lastCsa === csa) {
+            this.lastFetch = Date.now();
             if (
                 !player.kifu.moves.some((v) =>
                     v.comments?.some((str) => str.startsWith("$END_TIME:"))
                 )
             ) {
                 setTimeout(() => {
-                    fetchGame(selectGame.property("value"), true);
+                    this.fetchGame(false);
                 }, 10000);
             }
             return;
         }
-        copyButton.on("click", () => {
-            navigator.clipboard.writeText(csa);
-        });
-        const lastPly = graphdiv
+        //
+        const lastPly = this.graphDiv
             .select<HTMLSelectElement>("select.kifulist")
             .node()?.value;
-        const lastMaxPly = graphdiv
+        const lastMaxPly = this.graphDiv
             .select<HTMLOptionElement>("select.kifulist option:last-child")
             .node()?.value;
-        graphdiv.selectAll("*").remove();
+        //
+        this.graphDiv.selectAll("*").remove();
+        //
+        const navDiv = this.graphDiv.append("div");
+        const copyButton = navDiv
+            .append("button")
+            .attr("title", "現在表示中の棋譜をクリップボードにコピー")
+            .on("click", () => {
+                navigator.clipboard.writeText(csa);
+            });
+        iconSet(copyButton, copySvg);
+        const saveButton = navDiv
+            .append("button")
+            .attr("title", "形勢グラフをクリップボードにコピー(Chromeのみ対応)")
+            .on("click", () => {
+                const svgArray = this.graphDiv
+                    .select<SVGElement>("svg")
+                    .nodes();
+                if (svgArray.length) {
+                    const svg = svgArray[0];
+                    const svgUrl = `data:image/svg+xml;charset=utf-8;base64,${btoa(
+                        unescape(
+                            encodeURIComponent(
+                                new XMLSerializer().serializeToString(svg)
+                            )
+                        )
+                    )}`;
+                    const canvas = document.createElement("canvas");
+                    canvas.height = Math.max(svg.clientHeight, 480);
+                    canvas.width = Math.round(
+                        (canvas.height / svg.clientHeight) * svg.clientWidth
+                    );
+                    const ctx = canvas.getContext("2d");
+                    const image = new Image(canvas.width, canvas.height);
+                    image.onload = (): void => {
+                        ctx?.drawImage(
+                            image,
+                            0,
+                            0,
+                            canvas.width,
+                            canvas.height
+                        );
+                        if (
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            (global as any).ClipboardItem &&
+                            navigator.clipboard.write
+                        ) {
+                            canvas.toBlob(async (blob) => {
+                                if (blob) {
+                                    await navigator.clipboard.write([
+                                        new ClipboardItem({
+                                            [blob.type]: blob,
+                                        }),
+                                    ]);
+                                }
+                            });
+                        } else {
+                            navigator.clipboard.writeText(canvas.toDataURL());
+                        }
+                    };
+                    image.src = svgUrl;
+                }
+            });
+        iconSet(saveButton, saveSvg);
+        const redoButton = navDiv
+            .append("button")
+            .attr("title", "現在表示中の棋譜を再読み込み")
+            .on("click", () => {
+                this.fetchGame();
+            });
+        iconSet(redoButton, rotateSvg);
+
         // 時間フォーマット
         const timeFmt = (v: ITimeFormat): string =>
             (v.h ? `${v.h}:` + `0${v.m}:`.slice(-3) : `${v.m}:`) +
             `0${v.s}`.slice(-2);
         // gameid から持ち時間読み取り
-        const timeManMatch = gameid.match(
+        const timeManMatch = this.gameId.match(
             /^[\w.-]+\+[\w.-]+-(\d+)-(\d+)(F)?\+/
         );
         const timeMan: TimeMan = timeManMatch
@@ -262,11 +303,12 @@ window.addEventListener("load", () => {
                     : 0),
             50
         );
+        const graphScale = graphWidth / 256;
+        const graphHScale = (gameBoardProp.graphHScale ?? 1) * graphScale;
 
         doWrite(
-            graphdiv.append("div"),
+            this.graphDiv.append("div"),
             Object.assign<
-                Partial<SvgScoreGraphProp>,
                 Partial<SvgScoreGraphProp>,
                 Partial<SvgScoreGraphProp> | undefined,
                 Partial<SvgScoreGraphProp> | undefined
@@ -274,26 +316,24 @@ window.addEventListener("load", () => {
                 {
                     maxPly,
                     width: graphWidth,
-                    height: 48 * (graphWidth / 256),
-                    pad: graphWidth / 256,
-                    capPad: 1.5 * (graphWidth / 256),
-                    lWidthNml: 0.06 * (graphWidth / 256),
-                    lWidthBld: 0.18 * (graphWidth / 256),
-                    lWidthBorder: 0.24 * (graphWidth / 256),
-                    lWidthScore: 0.24 * (graphWidth / 256),
-                    lWidthTime: 0.12 * (graphWidth / 256),
-                    scaleLength: 1.5 * (graphWidth / 256),
-                    scalePad: 2 * (graphWidth / 256),
-                    cRadiusScore: 0.8 * Math.min(graphWidth / 128, 1),
-                    fSizeLw: 4 * (graphWidth / 256),
-                    fSizeLh: 5.25 * (graphWidth / 256),
-                    fSizeRw: 4 * (graphWidth / 256),
-                    fSizeRh: 3.5 * (graphWidth / 256),
-                    fSizeBw: 4 * (graphWidth / 256),
-                    fSizeBh: 5.5 * (graphWidth / 256),
-                    fSizeCap: graphWidth / Math.max(gameid.length, 64),
-                },
-                {
+                    height: 48 * graphHScale,
+                    pad: graphScale,
+                    capPad: 1.5 * graphScale,
+                    lWidthNml: 0.06 * graphScale,
+                    lWidthBld: 0.18 * graphScale,
+                    lWidthBorder: 0.24 * graphScale,
+                    lWidthScore: 0.24 * graphScale,
+                    lWidthTime: 0.12 * graphScale,
+                    scaleLength: 1.5 * graphScale,
+                    scalePad: 2 * graphScale,
+                    cRadiusScore: 0.8 * Math.min(graphScale * 2, 1),
+                    fSizeLw: 4 * graphScale,
+                    fSizeLh: 5.25 * graphScale,
+                    fSizeRw: 4 * graphScale,
+                    fSizeRh: 3.5 * graphScale,
+                    fSizeBw: 4 * graphScale,
+                    fSizeBh: 5.5 * graphScale,
+                    fSizeCap: graphWidth / Math.max(this.gameId.length, 64),
                     score: player.kifu.moves.map((v) =>
                         v.comments
                             ? v.comments.reduce((p, c) => {
@@ -326,7 +366,7 @@ window.addEventListener("load", () => {
                             ? remainTimeSec(i, v.time) / timeMan.base
                             : Number.NaN
                     ),
-                    caption: gameid,
+                    caption: this.gameId,
                     capLink: urlOrg,
                     plyCallback: (ply: number): void => {
                         select("div#boarddiv select.kifulist")
@@ -338,12 +378,12 @@ window.addEventListener("load", () => {
                             });
                     },
                 },
-                colorSet[color],
-                yaxisSet[yaxis]
+                colorSet[this.color],
+                yaxisSet[this.yaxis]
             )
         );
-        if (sfenVisible) {
-            const sfeninput = graphdiv
+        if (gameBoardProp.sfenVisible) {
+            const sfeninput = this.graphDiv
                 .append("div")
                 .append("input")
                 .attr("type", "text")
@@ -365,7 +405,7 @@ window.addEventListener("load", () => {
                     sfeninput.node()?.select();
                 });
         }
-        const boarddiv = graphdiv.append("div").attr("id", "boarddiv");
+        const boarddiv = this.graphDiv.append("div").attr("id", "boarddiv");
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (window as any).KifuForJS.loadString(csa, "boarddiv");
         boarddiv
@@ -375,7 +415,7 @@ window.addEventListener("load", () => {
             .on("click", () => {
                 window.open(url, "_blank");
             });
-        if (lastGame !== gameid || lastPly === lastMaxPly) {
+        if (this.lastGame !== this.gameId || lastPly === lastMaxPly) {
             boarddiv
                 .select<HTMLButtonElement>("button[data-go=Infinity]")
                 .node()
@@ -390,8 +430,8 @@ window.addEventListener("load", () => {
                     detail: {},
                 });
         }
-        if (kifuVisible) {
-            const par = graphdiv.append("p").attr("class", "kifu");
+        if (gameBoardProp.kifuVisible) {
+            const par = this.graphDiv.append("p").attr("class", "kifu");
             if (player.kifu.header["棋戦"]) {
                 par.append("span").text(
                     `$EVENT: ${player.kifu.header["棋戦"]}`
@@ -434,7 +474,7 @@ window.addEventListener("load", () => {
                     if (
                         v.comments?.some((str) => str.startsWith("$END_TIME:"))
                     ) {
-                        graphdiv
+                        this.graphDiv
                             .append("pre")
                             .attr("class", "reason")
                             .text(v.comments?.join("\n"));
@@ -449,37 +489,52 @@ window.addEventListener("load", () => {
         ) {
             boarddiv.select("select.autoload").property("value", "30");
             setTimeout(() => {
-                fetchGame(selectGame.property("value"), true);
+                this.fetchGame(false);
             }, 10000);
         }
-        if (!gameList.map((o) => o.gameId).includes(gameid)) {
-            gameList = gameList
-                .concat({ gameId: gameid, gameName: gameid })
-                .sort(
-                    (a, b) =>
-                        parseFloat(a.gameId.substring(a.gameId.length - 14)) -
-                        parseFloat(b.gameId.substring(b.gameId.length - 14))
-                );
-            selectGame.selectAll("*").remove();
-            gameList.forEach((o) => {
-                selectGame
-                    .append("option")
-                    .attr("value", o.gameId)
-                    .text(o.gameName);
-            });
-            selectGame.property("value", gameid);
-        }
-        lastFetch = Date.now();
-        lastGame = gameid;
-        lastCsa = csa;
-        lastColor = color;
-        lastYAxis = yaxis;
-    };
+        this.lastFetch = Date.now();
+        this.lastGame = this.gameId;
+        this.lastCsa = csa;
+    }
+}
+
+window.addEventListener("load", () => {
+    const body = select("body");
+    const selectGame = body.append("select").attr("id", "selectgame");
+    const selectColor = body.append("select").attr("id", "selectcolor");
+    selectColor.append("option").attr("value", "white").text("white");
+    selectColor.append("option").attr("value", "black").text("black");
+    selectColor.append("option").attr("value", "aqua").text("aqua");
+    const selectYAxis = body.append("select").attr("id", "selectyaxis");
+    selectYAxis
+        .attr(
+            "title",
+            "{\n  'pSigmoid': (score) => Math.asin(Math.atan(score * ((Math.PI * Math.PI) / 4800)) * (2 / Math.PI)) * (2 / Math.PI),\n  'atan': (score) => Math.atan(score * (Math.PI / 2400)) * (2 / Math.PI),\n  'tanh': (score) => Math.tanh(score / 1200),\n  'linear1000': (score) => Math.min(Math.max(score / 1000, -1), +1),\n  'linear1200': (score) => Math.min(Math.max(score / 1200, -1), +1),\n  'linear2000': (score) => Math.min(Math.max(score / 2000, -1), +1),\n  'linear3000': (score) => Math.min(Math.max(score / 3000, -1), +1),\n}"
+        )
+        .append("option")
+        .attr("value", "pseudoSigmoid")
+        .text("pSigmoid");
+    selectYAxis.append("option").attr("value", "atan").text("atan");
+    selectYAxis.append("option").attr("value", "tanh").text("tanh");
+    selectYAxis.append("option").attr("value", "linear1000").text("linear1000");
+    selectYAxis.append("option").attr("value", "linear1200").text("linear1200");
+    selectYAxis.append("option").attr("value", "linear2000").text("linear2000");
+    selectYAxis.append("option").attr("value", "linear3000").text("linear3000");
+    const reloadButton = body
+        .append("button")
+        .attr("title", "棋譜リストの再読み込み");
+    iconSet(reloadButton, refreshSvg);
+
+    const graphdiv = body.append("div").attr("class", "scoregraph");
+    const boardPart = new GameBoardBlock(graphdiv);
+    boardPart.color = select("body").select("#selectcolor").property("value");
+    boardPart.yaxis = select("body").select("#selectyaxis").property("value");
+    let gameList: GameObj[] = [];
     const listLoad = async (): Promise<void> => {
-        const logPromise = await fetch(gameUrlList);
+        const logPromise = await fetch(gameBoardProp.urlList);
         const log = await logPromise.text();
         gameList = gameList
-            .concat(gameLogParser(log))
+            .concat(gameBoardProp.logParser(log))
             .filter(
                 (x, i, self) =>
                     self.map((s) => s.gameId).lastIndexOf(x.gameId) === i
@@ -499,73 +554,36 @@ window.addEventListener("load", () => {
         const gameIdHash = getGameIdHash();
         if (gameIdHash) {
             selectGame.property("value", gameIdHash);
-            fetchGame(gameIdHash);
+            boardPart.gameId = gameIdHash;
+            boardPart.fetchGame();
         } else if (gameList.length) {
             const lastGameId = gameList[gameList.length - 1].gameId;
             window.location.hash = `#${lastGameId}`;
             selectGame.property("value", lastGameId);
-            fetchGame(lastGameId);
+            boardPart.gameId = lastGameId;
+            boardPart.fetchGame();
         }
     };
     selectGame.on("change", () => {
         const gameid = selectGame.property("value");
-        redoButton.on("click", () => fetchGame(gameid));
         const newHash = `#${gameid}`;
         if (window.location.hash !== newHash) {
             window.location.hash = newHash;
         }
-        fetchGame(gameid);
-    });
-    saveButton.on("click", () => {
-        const svgArray = graphdiv.select<SVGElement>("svg").nodes();
-        if (svgArray.length) {
-            const svg = svgArray[0];
-            const svgUrl = `data:image/svg+xml;charset=utf-8;base64,${btoa(
-                unescape(
-                    encodeURIComponent(
-                        new XMLSerializer().serializeToString(svg)
-                    )
-                )
-            )}`;
-            const canvas = document.createElement("canvas");
-            canvas.height = Math.max(svg.clientHeight, 480);
-            canvas.width = Math.round(
-                (canvas.height / svg.clientHeight) * svg.clientWidth
-            );
-            const ctx = canvas.getContext("2d");
-            const image = new Image(canvas.width, canvas.height);
-            image.onload = (): void => {
-                ctx?.drawImage(image, 0, 0, canvas.width, canvas.height);
-                if (
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    (global as any).ClipboardItem &&
-                    navigator.clipboard.write
-                ) {
-                    canvas.toBlob(async (blob) => {
-                        if (blob) {
-                            await navigator.clipboard.write([
-                                new ClipboardItem({
-                                    [blob.type]: blob,
-                                }),
-                            ]);
-                        }
-                    });
-                } else {
-                    navigator.clipboard.writeText(canvas.toDataURL());
-                }
-            };
-            image.src = svgUrl;
-        }
+        boardPart.gameId = gameid;
+        boardPart.fetchGame();
     });
     reloadButton.on("click", () => {
         window.location.hash = "";
         listLoad();
     });
     selectColor.on("change", () => {
-        fetchGame(selectGame.property("value"));
+        boardPart.color = selectGame.property("value");
+        boardPart.fetchGame();
     });
     selectYAxis.on("change", () => {
-        fetchGame(selectGame.property("value"));
+        boardPart.yaxis = selectGame.property("value");
+        boardPart.fetchGame();
     });
     listLoad();
     doWrite(body.append("div").attr("style", "display:none"), {
@@ -577,7 +595,8 @@ window.addEventListener("load", () => {
             const gameId = getGameIdHash();
             if (gameId) {
                 selectGame.property("value", gameId);
-                fetchGame(gameId);
+                boardPart.gameId = gameId;
+                boardPart.fetchGame();
             }
         }
     });
