@@ -23,13 +23,14 @@ interface TimeMan {
 }
 
 declare const gameBoardProp: {
-    graphHScale?: number;
+    multiView?: boolean;
     url: (gameid: string) => string;
     urlOrg: (gameid: string) => string;
     urlList: string;
     logParser: (log: string) => GameObj[];
     sfenVisible?: boolean;
     kifuVisible?: boolean;
+    graphHScale?: number;
 };
 
 const colorSet: { [c: string]: Partial<SvgScoreGraphProp> | undefined } = {
@@ -117,33 +118,35 @@ function iconSet<G extends BaseType>(
         .attr("data-icon-license", "MIT");
 }
 
-class GameBoardBlock {
+class GameBoard {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     graphDiv: Selection<HTMLDivElement, unknown, HTMLElement, any>;
     gameId = "";
     color = "";
     yaxis = "";
-    lastFetch = NaN;
-    lastGame = "";
-    lastCsa = "";
+    _lastFetch = NaN;
+    _lastGame = "";
+    _lastCsa = "";
     enabled = true;
+    uniqid = "";
     constructor(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         graphDiv: Selection<HTMLDivElement, unknown, HTMLElement, any>
     ) {
         this.graphDiv = graphDiv;
+        this.uniqid = new Date().valueOf().toString(16) + Math.floor(Math.random() * 65536).toString(16);
     }
-    async fetchGame(force = true): Promise<void> {
+    async fetchGame(force: boolean): Promise<void> {
         if (
             !this.enabled ||
-            (this.lastFetch + 8500 > Date.now() &&
-                this.lastGame === this.gameId &&
+            (this._lastFetch + 8500 > Date.now() &&
+                this._lastGame === this.gameId &&
                 !force)
         ) {
             return;
         }
-        if (this.lastGame !== this.gameId) {
-            this.lastCsa = "";
+        if (this._lastGame !== this.gameId) {
+            this._lastCsa = "";
         }
         const url = gameBoardProp.url(this.gameId);
         const urlOrg = gameBoardProp.urlOrg(this.gameId);
@@ -151,8 +154,8 @@ class GameBoardBlock {
         const csa = await csaPromise.text();
         const player = JKFPlayer.parseCSA(csa);
         player.goto(Infinity);
-        if (!force && this.lastGame === this.gameId && this.lastCsa === csa) {
-            this.lastFetch = Date.now();
+        if (!force && this._lastGame === this.gameId && this._lastCsa === csa) {
+            this._lastFetch = Date.now();
             if (
                 !player.kifu.moves.some((v) =>
                     v.comments?.some((str) => str.startsWith("$END_TIME:"))
@@ -239,7 +242,7 @@ class GameBoardBlock {
             .append("button")
             .attr("title", "現在表示中の棋譜を再読み込み")
             .on("click", () => {
-                this.fetchGame();
+                this.fetchGame(true);
             });
         iconSet(redoButton, rotateSvg);
 
@@ -369,7 +372,7 @@ class GameBoardBlock {
                     caption: this.gameId,
                     capLink: urlOrg,
                     plyCallback: (ply: number): void => {
-                        select("div#boarddiv select.kifulist")
+                        this.graphDiv.select(`select.kifulist`)
                             .property("value", `${ply}`)
                             ?.dispatch("change", {
                                 bubbles: true,
@@ -405,9 +408,9 @@ class GameBoardBlock {
                     sfeninput.node()?.select();
                 });
         }
-        const boarddiv = this.graphDiv.append("div").attr("id", "boarddiv");
+        const boarddiv = this.graphDiv.append("div").attr("id", this.uniqid);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (window as any).KifuForJS.loadString(csa, "boarddiv");
+        (window as any).KifuForJS.loadString(csa, this.uniqid);
         boarddiv
             .select<HTMLButtonElement>("button[class=dl]")
             .attr("disabled", false)
@@ -415,7 +418,7 @@ class GameBoardBlock {
             .on("click", () => {
                 window.open(url, "_blank");
             });
-        if (this.lastGame !== this.gameId || lastPly === lastMaxPly) {
+        if (this._lastGame !== this.gameId || lastPly === lastMaxPly) {
             boarddiv
                 .select<HTMLButtonElement>("button[data-go=Infinity]")
                 .node()
@@ -492,112 +495,203 @@ class GameBoardBlock {
                 this.fetchGame(false);
             }, 10000);
         }
-        this.lastFetch = Date.now();
-        this.lastGame = this.gameId;
-        this.lastCsa = csa;
+        this._lastFetch = Date.now();
+        this._lastGame = this.gameId;
+        this._lastCsa = csa;
     }
 }
 
-window.addEventListener("load", () => {
-    const body = select("body");
-    const selectGame = body.append("select").attr("id", "selectgame");
-    const selectColor = body.append("select").attr("id", "selectcolor");
-    selectColor.append("option").attr("value", "white").text("white");
-    selectColor.append("option").attr("value", "black").text("black");
-    selectColor.append("option").attr("value", "aqua").text("aqua");
-    const selectYAxis = body.append("select").attr("id", "selectyaxis");
-    selectYAxis
-        .attr(
-            "title",
-            "{\n  'pSigmoid': (score) => Math.asin(Math.atan(score * ((Math.PI * Math.PI) / 4800)) * (2 / Math.PI)) * (2 / Math.PI),\n  'atan': (score) => Math.atan(score * (Math.PI / 2400)) * (2 / Math.PI),\n  'tanh': (score) => Math.tanh(score / 1200),\n  'linear1000': (score) => Math.min(Math.max(score / 1000, -1), +1),\n  'linear1200': (score) => Math.min(Math.max(score / 1200, -1), +1),\n  'linear2000': (score) => Math.min(Math.max(score / 2000, -1), +1),\n  'linear3000': (score) => Math.min(Math.max(score / 3000, -1), +1),\n}"
-        )
-        .append("option")
-        .attr("value", "pseudoSigmoid")
-        .text("pSigmoid");
-    selectYAxis.append("option").attr("value", "atan").text("atan");
-    selectYAxis.append("option").attr("value", "tanh").text("tanh");
-    selectYAxis.append("option").attr("value", "linear1000").text("linear1000");
-    selectYAxis.append("option").attr("value", "linear1200").text("linear1200");
-    selectYAxis.append("option").attr("value", "linear2000").text("linear2000");
-    selectYAxis.append("option").attr("value", "linear3000").text("linear3000");
-    const reloadButton = body
-        .append("button")
-        .attr("title", "棋譜リストの再読み込み");
-    iconSet(reloadButton, refreshSvg);
-
-    const graphdiv = body.append("div").attr("class", "scoregraph");
-    const boardPart = new GameBoardBlock(graphdiv);
-    boardPart.color = select("body").select("#selectcolor").property("value");
-    boardPart.yaxis = select("body").select("#selectyaxis").property("value");
-    let gameList: GameObj[] = [];
-    const listLoad = async (): Promise<void> => {
-        const logPromise = await fetch(gameBoardProp.urlList);
-        const log = await logPromise.text();
-        gameList = gameList
-            .concat(gameBoardProp.logParser(log))
-            .filter(
-                (x, i, self) =>
-                    self.map((s) => s.gameId).lastIndexOf(x.gameId) === i
+if (gameBoardProp.multiView) {
+    window.addEventListener("load", () => {
+        const body = select("body");
+        const selectColor = body.append("select").attr("id", "selectcolor");
+        selectColor.append("option").attr("value", "white").text("white");
+        selectColor.append("option").attr("value", "black").text("black");
+        selectColor.append("option").attr("value", "aqua").text("aqua");
+        const selectYAxis = body.append("select").attr("id", "selectyaxis");
+        selectYAxis
+            .attr(
+                "title",
+                "{\n  'pSigmoid': (score) => Math.asin(Math.atan(score * ((Math.PI * Math.PI) / 4800)) * (2 / Math.PI)) * (2 / Math.PI),\n  'atan': (score) => Math.atan(score * (Math.PI / 2400)) * (2 / Math.PI),\n  'tanh': (score) => Math.tanh(score / 1200),\n  'linear1000': (score) => Math.min(Math.max(score / 1000, -1), +1),\n  'linear1200': (score) => Math.min(Math.max(score / 1200, -1), +1),\n  'linear2000': (score) => Math.min(Math.max(score / 2000, -1), +1),\n  'linear3000': (score) => Math.min(Math.max(score / 3000, -1), +1),\n}"
             )
-            .sort(
-                (a, b) =>
-                    parseFloat(a.gameId.substring(a.gameId.length - 14)) -
-                    parseFloat(b.gameId.substring(b.gameId.length - 14))
-            );
-        selectGame.selectAll("*").remove();
-        gameList.forEach((o) => {
-            selectGame
-                .append("option")
-                .attr("value", o.gameId)
-                .text(o.gameName);
+            .append("option")
+            .attr("value", "pseudoSigmoid")
+            .text("pSigmoid");
+        selectYAxis.append("option").attr("value", "atan").text("atan");
+        selectYAxis.append("option").attr("value", "tanh").text("tanh");
+        selectYAxis.append("option").attr("value", "linear1000").text("linear1000");
+        selectYAxis.append("option").attr("value", "linear1200").text("linear1200");
+        selectYAxis.append("option").attr("value", "linear2000").text("linear2000");
+        selectYAxis.append("option").attr("value", "linear3000").text("linear3000");
+        const reloadButton = body
+            .append("button")
+            .attr("title", "棋譜リストの再読み込み");
+        iconSet(reloadButton, refreshSvg);
+
+        const boards: GameBoard[] = [];
+        const boardsOuter = body.append("div").attr("class", "scoregraph-container");
+
+        const listLoad = async (): Promise<void> => {
+            const logPromise = await fetch(gameBoardProp.urlList);
+            const log = await logPromise.text();
+            while (boards.length > 0) {
+                const e = boards.pop();
+                if (e) {
+                    e.enabled = false;
+                    e.graphDiv.remove();
+                }
+            }
+            const gameList =
+                gameBoardProp.logParser(log)
+                .filter(
+                    (x, i, self) =>
+                        self.map((s) => s.gameId).lastIndexOf(x.gameId) === i
+                )
+                .sort(
+                    (a, b) =>
+                    parseFloat(b.gameId.substring(b.gameId.length - 14)) -
+                    parseFloat(a.gameId.substring(a.gameId.length - 14))
+                );
+            if (gameList.length === 0) {
+                return;
+            }
+            const gameIdToDtValue = (gameid: string): number => {
+                const idLength = gameid.length;
+                return new Date(
+                    Number.parseInt(gameid.substring(gameid.length - 14, gameid.length - 10), 10),
+                    Number.parseInt(gameid.substring(gameid.length - 10, gameid.length - 8), 10),
+                    Number.parseInt(gameid.substring(gameid.length - 8, gameid.length - 6), 10),
+                    Number.parseInt(gameid.substring(gameid.length - 6, gameid.length - 4), 10),
+                    Number.parseInt(gameid.substring(gameid.length - 4, gameid.length - 2), 10),
+                    Number.parseInt(gameid.substring(gameid.length - 2, gameid.length), 10),
+                ).valueOf();
+            };
+            const lastGameIdDtValue = gameIdToDtValue(gameList[0].gameId);
+            gameList.filter((e) => 
+                lastGameIdDtValue - gameIdToDtValue(e.gameId) <= 2400000
+            ).forEach((e) => {
+                const obj = new GameBoard(boardsOuter.append("div").attr("class", "scoregraph"));
+                obj.gameId = e.gameId;
+                obj.fetchGame(true);
+                boards.push(obj);
+            });
+        };
+        reloadButton.on("click", () => {
+            listLoad();
         });
-        const gameIdHash = getGameIdHash();
-        if (gameIdHash) {
-            selectGame.property("value", gameIdHash);
-            boardPart.gameId = gameIdHash;
-            boardPart.fetchGame();
-        } else if (gameList.length) {
-            const lastGameId = gameList[gameList.length - 1].gameId;
-            window.location.hash = `#${lastGameId}`;
-            selectGame.property("value", lastGameId);
-            boardPart.gameId = lastGameId;
-            boardPart.fetchGame();
-        }
-    };
-    selectGame.on("change", () => {
-        const gameid = selectGame.property("value");
-        const newHash = `#${gameid}`;
-        if (window.location.hash !== newHash) {
-            window.location.hash = newHash;
-        }
-        boardPart.gameId = gameid;
-        boardPart.fetchGame();
-    });
-    reloadButton.on("click", () => {
-        window.location.hash = "";
+        selectColor.on("change", () => {
+            boards.forEach((e) => {
+                e.color = selectColor.property("value");
+                e.fetchGame(true);
+            });
+        });
+        selectYAxis.on("change", () => {
+            boards.forEach((e) => {
+                e.yaxis = selectYAxis.property("value");
+                e.fetchGame(true);
+            });
+        });
+
         listLoad();
     });
-    selectColor.on("change", () => {
-        boardPart.color = selectGame.property("value");
-        boardPart.fetchGame();
-    });
-    selectYAxis.on("change", () => {
-        boardPart.yaxis = selectGame.property("value");
-        boardPart.fetchGame();
-    });
-    listLoad();
-    doWrite(body.append("div").attr("style", "display:none"), {
-        maxPly: 320,
-        width: 321,
-    });
-    window.addEventListener("hashchange", (ev) => {
-        if (ev.isTrusted) {
-            const gameId = getGameIdHash();
-            if (gameId) {
-                selectGame.property("value", gameId);
-                boardPart.gameId = gameId;
-                boardPart.fetchGame();
+} else {
+    window.addEventListener("load", () => {
+        const body = select("body");
+        const selectGame = body.append("select").attr("id", "selectgame");
+        const selectColor = body.append("select").attr("id", "selectcolor");
+        selectColor.append("option").attr("value", "white").text("white");
+        selectColor.append("option").attr("value", "black").text("black");
+        selectColor.append("option").attr("value", "aqua").text("aqua");
+        const selectYAxis = body.append("select").attr("id", "selectyaxis");
+        selectYAxis
+            .attr(
+                "title",
+                "{\n  'pSigmoid': (score) => Math.asin(Math.atan(score * ((Math.PI * Math.PI) / 4800)) * (2 / Math.PI)) * (2 / Math.PI),\n  'atan': (score) => Math.atan(score * (Math.PI / 2400)) * (2 / Math.PI),\n  'tanh': (score) => Math.tanh(score / 1200),\n  'linear1000': (score) => Math.min(Math.max(score / 1000, -1), +1),\n  'linear1200': (score) => Math.min(Math.max(score / 1200, -1), +1),\n  'linear2000': (score) => Math.min(Math.max(score / 2000, -1), +1),\n  'linear3000': (score) => Math.min(Math.max(score / 3000, -1), +1),\n}"
+            )
+            .append("option")
+            .attr("value", "pseudoSigmoid")
+            .text("pSigmoid");
+        selectYAxis.append("option").attr("value", "atan").text("atan");
+        selectYAxis.append("option").attr("value", "tanh").text("tanh");
+        selectYAxis.append("option").attr("value", "linear1000").text("linear1000");
+        selectYAxis.append("option").attr("value", "linear1200").text("linear1200");
+        selectYAxis.append("option").attr("value", "linear2000").text("linear2000");
+        selectYAxis.append("option").attr("value", "linear3000").text("linear3000");
+        const reloadButton = body
+            .append("button")
+            .attr("title", "棋譜リストの再読み込み");
+        iconSet(reloadButton, refreshSvg);
+
+        const graphdiv = body.append("div").attr("class", "scoregraph");
+        const boardPart = new GameBoard(graphdiv);
+        boardPart.color = select("body").select("#selectcolor").property("value");
+        boardPart.yaxis = select("body").select("#selectyaxis").property("value");
+        let gameList: GameObj[] = [];
+        const listLoad = async (): Promise<void> => {
+            const logPromise = await fetch(gameBoardProp.urlList);
+            const log = await logPromise.text();
+            gameList = gameList
+                .concat(gameBoardProp.logParser(log))
+                .filter(
+                    (x, i, self) =>
+                        self.map((s) => s.gameId).lastIndexOf(x.gameId) === i
+                )
+                .sort(
+                    (a, b) =>
+                        parseFloat(a.gameId.substring(a.gameId.length - 14)) -
+                        parseFloat(b.gameId.substring(b.gameId.length - 14))
+                );
+            selectGame.selectAll("*").remove();
+            gameList.forEach((o) => {
+                selectGame
+                    .append("option")
+                    .attr("value", o.gameId)
+                    .text(o.gameName);
+            });
+            const gameIdHash = getGameIdHash();
+            if (gameIdHash) {
+                selectGame.property("value", gameIdHash);
+                boardPart.gameId = gameIdHash;
+                boardPart.fetchGame(true);
+            } else if (gameList.length) {
+                const lastGameId = gameList[gameList.length - 1].gameId;
+                window.location.hash = `#${lastGameId}`;
+                selectGame.property("value", lastGameId);
+                boardPart.gameId = lastGameId;
+                boardPart.fetchGame(true);
             }
-        }
+        };
+        selectGame.on("change", () => {
+            const gameid = selectGame.property("value");
+            const newHash = `#${gameid}`;
+            if (window.location.hash !== newHash) {
+                window.location.hash = newHash;
+            }
+            boardPart.gameId = gameid;
+            boardPart.fetchGame(true);
+        });
+        reloadButton.on("click", () => {
+            window.location.hash = "";
+            listLoad();
+        });
+        selectColor.on("change", () => {
+            boardPart.color = selectColor.property("value");
+            boardPart.fetchGame(true);
+        });
+        selectYAxis.on("change", () => {
+            boardPart.yaxis = selectYAxis.property("value");
+            boardPart.fetchGame(true);
+        });
+        listLoad();
+        window.addEventListener("hashchange", (ev) => {
+            if (ev.isTrusted) {
+                const gameId = getGameIdHash();
+                if (gameId) {
+                    selectGame.property("value", gameId);
+                    boardPart.gameId = gameId;
+                    boardPart.fetchGame(true);
+                }
+            }
+        });
     });
-});
+}

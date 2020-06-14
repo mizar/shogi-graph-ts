@@ -7,11 +7,14 @@
 <style>
 .kifuforjs .players .mochi .tebanname { overflow: hidden; }
 @media only screen { .scoregraph, .scoregraph svg.scoregraph, .scoregraph input.sfen, .scoregraph p.kifu, .scoregraph pre.reason { width: 570px; } }
+.scoregraph-container { display: flex; flex-direction: row; flex-wrap: wrap; }
+.scoregraph { width: 580px; flex: 0 0 auto; }
 </style>
 <script type="text/javascript">
 var denryuUrlBase = "https://mzr.jp/denryusen/dr1_test1";
 var denryuOrgUrlBase = "http://www.golan.sakura.ne.jp/denryusen/dr1_test1";
 var gameBoardProp = {
+    multiView: true,
     url: (gameid) => denryuUrlBase + "/kifufiles/" + gameid + ".csa",
     urlOrg: (gameid) => denryuOrgUrlBase + "/kifufiles/" + gameid + ".csa",
     urlList: denryuUrlBase + "/csalist.php",
