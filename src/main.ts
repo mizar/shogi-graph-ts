@@ -135,7 +135,9 @@ class GameBoard {
         graphDiv: Selection<HTMLDivElement, unknown, HTMLElement, any>
     ) {
         this.graphDiv = graphDiv;
-        this.uniqid = new Date().valueOf().toString(16) + Math.floor(Math.random() * 65536).toString(16);
+        this.uniqid =
+            new Date().valueOf().toString(16) +
+            Math.floor(Math.random() * 65536).toString(16);
     }
     async fetchGame(force: boolean): Promise<void> {
         if (!this.gameObj) {
@@ -159,7 +161,12 @@ class GameBoard {
         const csa = await csaPromise.text();
         const player = JKFPlayer.parseCSA(csa);
         player.goto(Infinity);
-        if (!force && this._lastGame && this._lastGame.gameId === this.gameObj.gameId && this._lastCsa === csa) {
+        if (
+            !force &&
+            this._lastGame &&
+            this._lastGame.gameId === this.gameObj.gameId &&
+            this._lastCsa === csa
+        ) {
             this._lastFetch = Date.now();
             if (
                 !player.kifu.moves.some((v) =>
@@ -342,7 +349,8 @@ class GameBoard {
                     fSizeRh: 3.5 * graphScale,
                     fSizeBw: 4 * graphScale,
                     fSizeBh: 5.5 * graphScale,
-                    fSizeCap: graphWidth / Math.max(this.gameObj.gameId.length, 64),
+                    fSizeCap:
+                        graphWidth / Math.max(this.gameObj.gameId.length, 64),
                     score: player.kifu.moves.map((v) =>
                         v.comments
                             ? v.comments.reduce((p, c) => {
@@ -378,7 +386,8 @@ class GameBoard {
                     caption: this.gameObj.gameId,
                     capLink: urlOrg,
                     plyCallback: (ply: number): void => {
-                        this.graphDiv.select(`select.kifulist`)
+                        this.graphDiv
+                            .select(`select.kifulist`)
                             .property("value", `${ply}`)
                             ?.dispatch("change", {
                                 bubbles: true,
@@ -425,7 +434,10 @@ class GameBoard {
             .on("click", () => {
                 window.open(url, "_blank");
             });
-        if (this._lastGame && this._lastGame.gameId !== this.gameObj.gameId || lastPly === lastMaxPly) {
+        if (
+            (this._lastGame && this._lastGame.gameId !== this.gameObj.gameId) ||
+            lastPly === lastMaxPly
+        ) {
             boarddiv
                 .select<HTMLButtonElement>("button[data-go=Infinity]")
                 .node()
@@ -526,17 +538,31 @@ if (gameBoardProp.multiView) {
             .text("pSigmoid");
         selectYAxis.append("option").attr("value", "atan").text("atan");
         selectYAxis.append("option").attr("value", "tanh").text("tanh");
-        selectYAxis.append("option").attr("value", "linear1000").text("linear1000");
-        selectYAxis.append("option").attr("value", "linear1200").text("linear1200");
-        selectYAxis.append("option").attr("value", "linear2000").text("linear2000");
-        selectYAxis.append("option").attr("value", "linear3000").text("linear3000");
+        selectYAxis
+            .append("option")
+            .attr("value", "linear1000")
+            .text("linear1000");
+        selectYAxis
+            .append("option")
+            .attr("value", "linear1200")
+            .text("linear1200");
+        selectYAxis
+            .append("option")
+            .attr("value", "linear2000")
+            .text("linear2000");
+        selectYAxis
+            .append("option")
+            .attr("value", "linear3000")
+            .text("linear3000");
         const reloadButton = body
             .append("button")
             .attr("title", "棋譜リストの再読み込み");
         iconSet(reloadButton, refreshSvg);
 
         const boards: GameBoard[] = [];
-        const boardsOuter = body.append("div").attr("class", "scoregraph-container");
+        const boardsOuter = body
+            .append("div")
+            .attr("class", "scoregraph-container");
 
         const listLoad = async (): Promise<void> => {
             const logPromise = await fetch(gameBoardProp.urlList);
@@ -548,40 +574,66 @@ if (gameBoardProp.multiView) {
                     e.graphDiv.remove();
                 }
             }
-            const gameList =
-                gameBoardProp.logParser(log)
+            const gameList = gameBoardProp
+                .logParser(log)
                 .filter(
                     (x, i, self) =>
                         self.map((s) => s.gameId).lastIndexOf(x.gameId) === i
                 )
                 .sort(
                     (a, b) =>
-                    parseFloat(b.gameId.substring(b.gameId.length - 14)) -
-                    parseFloat(a.gameId.substring(a.gameId.length - 14))
+                        parseFloat(b.gameId.substring(b.gameId.length - 14)) -
+                        parseFloat(a.gameId.substring(a.gameId.length - 14))
                 );
             if (gameList.length === 0) {
                 return;
             }
             const gameIdToDtValue = (gameid: string): number => {
-                const idLength = gameid.length;
                 return new Date(
-                    Number.parseInt(gameid.substring(gameid.length - 14, gameid.length - 10), 10),
-                    Number.parseInt(gameid.substring(gameid.length - 10, gameid.length - 8), 10),
-                    Number.parseInt(gameid.substring(gameid.length - 8, gameid.length - 6), 10),
-                    Number.parseInt(gameid.substring(gameid.length - 6, gameid.length - 4), 10),
-                    Number.parseInt(gameid.substring(gameid.length - 4, gameid.length - 2), 10),
-                    Number.parseInt(gameid.substring(gameid.length - 2, gameid.length), 10),
+                    Number.parseInt(
+                        gameid.substring(
+                            gameid.length - 14,
+                            gameid.length - 10
+                        ),
+                        10
+                    ),
+                    Number.parseInt(
+                        gameid.substring(gameid.length - 10, gameid.length - 8),
+                        10
+                    ),
+                    Number.parseInt(
+                        gameid.substring(gameid.length - 8, gameid.length - 6),
+                        10
+                    ),
+                    Number.parseInt(
+                        gameid.substring(gameid.length - 6, gameid.length - 4),
+                        10
+                    ),
+                    Number.parseInt(
+                        gameid.substring(gameid.length - 4, gameid.length - 2),
+                        10
+                    ),
+                    Number.parseInt(
+                        gameid.substring(gameid.length - 2, gameid.length),
+                        10
+                    )
                 ).valueOf();
             };
             const lastGameIdDtValue = gameIdToDtValue(gameList[0].gameId);
-            gameList.filter((e) => 
-                lastGameIdDtValue - gameIdToDtValue(e.gameId) <= (gameBoardProp.multiViewSpan ?? 2400000)
-            ).forEach((e) => {
-                const obj = new GameBoard(boardsOuter.append("div").attr("class", "scoregraph"));
-                obj.gameObj = e;
-                obj.fetchGame(true);
-                boards.push(obj);
-            });
+            gameList
+                .filter(
+                    (e) =>
+                        lastGameIdDtValue - gameIdToDtValue(e.gameId) <=
+                        (gameBoardProp.multiViewSpan ?? 2400000)
+                )
+                .forEach((e) => {
+                    const obj = new GameBoard(
+                        boardsOuter.append("div").attr("class", "scoregraph")
+                    );
+                    obj.gameObj = e;
+                    obj.fetchGame(true);
+                    boards.push(obj);
+                });
         };
         reloadButton.on("click", () => {
             listLoad();
@@ -620,10 +672,22 @@ if (gameBoardProp.multiView) {
             .text("pSigmoid");
         selectYAxis.append("option").attr("value", "atan").text("atan");
         selectYAxis.append("option").attr("value", "tanh").text("tanh");
-        selectYAxis.append("option").attr("value", "linear1000").text("linear1000");
-        selectYAxis.append("option").attr("value", "linear1200").text("linear1200");
-        selectYAxis.append("option").attr("value", "linear2000").text("linear2000");
-        selectYAxis.append("option").attr("value", "linear3000").text("linear3000");
+        selectYAxis
+            .append("option")
+            .attr("value", "linear1000")
+            .text("linear1000");
+        selectYAxis
+            .append("option")
+            .attr("value", "linear1200")
+            .text("linear1200");
+        selectYAxis
+            .append("option")
+            .attr("value", "linear2000")
+            .text("linear2000");
+        selectYAxis
+            .append("option")
+            .attr("value", "linear3000")
+            .text("linear3000");
         const reloadButton = body
             .append("button")
             .attr("title", "棋譜リストの再読み込み");
@@ -631,8 +695,12 @@ if (gameBoardProp.multiView) {
 
         const graphdiv = body.append("div").attr("class", "scoregraph");
         const boardPart = new GameBoard(graphdiv);
-        boardPart.color = select("body").select("#selectcolor").property("value");
-        boardPart.yaxis = select("body").select("#selectyaxis").property("value");
+        boardPart.color = select("body")
+            .select("#selectcolor")
+            .property("value");
+        boardPart.yaxis = select("body")
+            .select("#selectyaxis")
+            .property("value");
         let gameList: GameObj[] = [];
         const listLoad = async (): Promise<void> => {
             const logPromise = await fetch(gameBoardProp.urlList);
@@ -658,7 +726,10 @@ if (gameBoardProp.multiView) {
             const gameIdHash = getGameIdHash();
             if (gameIdHash) {
                 selectGame.property("value", gameIdHash);
-                boardPart.gameObj = { gameId: gameIdHash, gameName: gameIdHash };
+                boardPart.gameObj = {
+                    gameId: gameIdHash,
+                    gameName: gameIdHash,
+                };
                 gameList.forEach((e) => {
                     if (e.gameId === gameIdHash) {
                         boardPart.gameObj = e;
@@ -669,7 +740,10 @@ if (gameBoardProp.multiView) {
                 const lastGameId = gameList[gameList.length - 1].gameId;
                 window.location.hash = `#${lastGameId}`;
                 selectGame.property("value", lastGameId);
-                boardPart.gameObj = { gameId: lastGameId, gameName: lastGameId };
+                boardPart.gameObj = {
+                    gameId: lastGameId,
+                    gameName: lastGameId,
+                };
                 gameList.forEach((e) => {
                     if (e.gameId === lastGameId) {
                         boardPart.gameObj = e;

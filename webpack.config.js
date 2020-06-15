@@ -5,6 +5,8 @@ const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const CompressionPlugin = require("compression-webpack-plugin");
 const { gzip } = require("@gfx/zopfli");
 const { name } = require("./package.json");
+const CopyFilePlugin = require("copy-webpack-plugin");
+const path = require("path");
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 module.exports = (env) => ({
@@ -75,7 +77,23 @@ module.exports = (env) => ({
                   }),
               ]
             : [],
-        env && env.analyze ? [new BundleAnalyzerPlugin()] : []
+        env && env.analyze ? [new BundleAnalyzerPlugin()] : [],
+        [
+            new CopyFilePlugin(
+                {
+                    patterns: [
+                        {
+                            context: "node_modules/kifu-for-js/bundle",
+                            from: "kifu-for-js-*",
+                            to: path.resolve(__dirname, "dist"),
+                        },
+                    ],
+                },
+                {
+                    copyUnmodified: true,
+                }
+            ),
+        ]
     ),
     resolve: {
         extensions: [".html", ".ts", ".js", ".json"],
