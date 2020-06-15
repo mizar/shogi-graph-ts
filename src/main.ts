@@ -325,6 +325,16 @@ class GameBoard {
         const graphScale = graphWidth / 256;
         const graphHScale = (gameBoardProp.graphHScale ?? 1) * graphScale;
 
+        const remainTimes = player.kifu.moves.map((v, i) =>
+            v.time ? remainTimeStr(i, v.time) : ""
+        );
+        const remainTimesB = remainTimes.filter(
+            (v, i) => i > 1 && i % 2 === 1 && v !== ""
+        );
+        const remainTimesW = remainTimes.filter(
+            (v, i) => i > 1 && i % 2 === 0 && v !== ""
+        );
+
         doWrite(
             this.graphDiv.append("div"),
             Object.assign<
@@ -386,6 +396,14 @@ class GameBoard {
                             ? remainTimeSec(i, v.time) / timeMan.base
                             : Number.NaN
                     ),
+                    remainTimeB:
+                        remainTimesB.length > 0
+                            ? remainTimesB[remainTimesB.length - 1]
+                            : "",
+                    remainTimeW:
+                        remainTimesW.length > 0
+                            ? remainTimesW[remainTimesW.length - 1]
+                            : "",
                     caption: this.gameObj.gameId,
                     capLink: urlOrg,
                     plyCallback: (ply: number): void => {
