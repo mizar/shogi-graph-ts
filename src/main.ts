@@ -24,6 +24,7 @@ interface TimeMan {
 
 declare const gameBoardProp: {
     multiView?: boolean;
+    multiViewSpan?: number;
     url: (gameid: string) => string;
     urlOrg: (gameid: string) => string;
     urlList: string;
@@ -121,11 +122,11 @@ function iconSet<G extends BaseType>(
 class GameBoard {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     graphDiv: Selection<HTMLDivElement, unknown, HTMLElement, any>;
-    gameId = "";
+    gameObj: GameObj | undefined;
     color = "";
     yaxis = "";
     _lastFetch = NaN;
-    _lastGame = "";
+    _lastGame: GameObj | undefined;
     _lastCsa = "";
     enabled = true;
     uniqid = "";
@@ -137,24 +138,28 @@ class GameBoard {
         this.uniqid = new Date().valueOf().toString(16) + Math.floor(Math.random() * 65536).toString(16);
     }
     async fetchGame(force: boolean): Promise<void> {
+        if (!this.gameObj) {
+            return;
+        }
         if (
             !this.enabled ||
             (this._lastFetch + 8500 > Date.now() &&
-                this._lastGame === this.gameId &&
+                this._lastGame &&
+                this._lastGame.gameId === this.gameObj.gameId &&
                 !force)
         ) {
             return;
         }
-        if (this._lastGame !== this.gameId) {
+        if (this._lastGame && this._lastGame.gameId !== this.gameObj.gameId) {
             this._lastCsa = "";
         }
-        const url = gameBoardProp.url(this.gameId);
-        const urlOrg = gameBoardProp.urlOrg(this.gameId);
+        const url = gameBoardProp.url(this.gameObj.gameId);
+        const urlOrg = gameBoardProp.urlOrg(this.gameObj.gameId);
         const csaPromise = await fetch(url);
         const csa = await csaPromise.text();
         const player = JKFPlayer.parseCSA(csa);
         player.goto(Infinity);
-        if (!force && this._lastGame === this.gameId && this._lastCsa === csa) {
+        if (!force && this._lastGame && this._lastGame.gameId === this.gameObj.gameId && this._lastCsa === csa) {
             this._lastFetch = Date.now();
             if (
                 !player.kifu.moves.some((v) =>
@@ -177,7 +182,7 @@ class GameBoard {
         //
         this.graphDiv.selectAll("*").remove();
         //
-        const navDiv = this.graphDiv.append("div");
+        const navDiv = this.graphDiv.append("div").attr("class", "nav");
         const copyButton = navDiv
             .append("button")
             .attr("title", "現在表示中の棋譜をクリップボードにコピー")
@@ -245,13 +250,14 @@ class GameBoard {
                 this.fetchGame(true);
             });
         iconSet(redoButton, rotateSvg);
+        const navText = navDiv.append("span").attr("class", "navText");
 
         // 時間フォーマット
         const timeFmt = (v: ITimeFormat): string =>
             (v.h ? `${v.h}:` + `0${v.m}:`.slice(-3) : `${v.m}:`) +
             `0${v.s}`.slice(-2);
         // gameid から持ち時間読み取り
-        const timeManMatch = this.gameId.match(
+        const timeManMatch = this.gameObj.gameId.match(
             /^[\w.-]+\+[\w.-]+-(\d+)-(\d+)(F)?\+/
         );
         const timeMan: TimeMan = timeManMatch
@@ -336,7 +342,7 @@ class GameBoard {
                     fSizeRh: 3.5 * graphScale,
                     fSizeBw: 4 * graphScale,
                     fSizeBh: 5.5 * graphScale,
-                    fSizeCap: graphWidth / Math.max(this.gameId.length, 64),
+                    fSizeCap: graphWidth / Math.max(this.gameObj.gameId.length, 64),
                     score: player.kifu.moves.map((v) =>
                         v.comments
                             ? v.comments.reduce((p, c) => {
@@ -369,7 +375,7 @@ class GameBoard {
                             ? remainTimeSec(i, v.time) / timeMan.base
                             : Number.NaN
                     ),
-                    caption: this.gameId,
+                    caption: this.gameObj.gameId,
                     capLink: urlOrg,
                     plyCallback: (ply: number): void => {
                         this.graphDiv.select(`select.kifulist`)
@@ -408,6 +414,7 @@ class GameBoard {
                     sfeninput.node()?.select();
                 });
         }
+        navText.text(this.gameObj.gameName);
         const boarddiv = this.graphDiv.append("div").attr("id", this.uniqid);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (window as any).KifuForJS.loadString(csa, this.uniqid);
@@ -418,7 +425,7 @@ class GameBoard {
             .on("click", () => {
                 window.open(url, "_blank");
             });
-        if (this._lastGame !== this.gameId || lastPly === lastMaxPly) {
+        if (this._lastGame && this._lastGame.gameId !== this.gameObj.gameId || lastPly === lastMaxPly) {
             boarddiv
                 .select<HTMLButtonElement>("button[data-go=Infinity]")
                 .node()
@@ -496,7 +503,7 @@ class GameBoard {
             }, 10000);
         }
         this._lastFetch = Date.now();
-        this._lastGame = this.gameId;
+        this._lastGame = this.gameObj;
         this._lastCsa = csa;
     }
 }
@@ -568,10 +575,10 @@ if (gameBoardProp.multiView) {
             };
             const lastGameIdDtValue = gameIdToDtValue(gameList[0].gameId);
             gameList.filter((e) => 
-                lastGameIdDtValue - gameIdToDtValue(e.gameId) <= 2400000
+                lastGameIdDtValue - gameIdToDtValue(e.gameId) <= (gameBoardProp.multiViewSpan ?? 2400000)
             ).forEach((e) => {
                 const obj = new GameBoard(boardsOuter.append("div").attr("class", "scoregraph"));
-                obj.gameId = e.gameId;
+                obj.gameObj = e;
                 obj.fetchGame(true);
                 boards.push(obj);
             });
@@ -651,23 +658,38 @@ if (gameBoardProp.multiView) {
             const gameIdHash = getGameIdHash();
             if (gameIdHash) {
                 selectGame.property("value", gameIdHash);
-                boardPart.gameId = gameIdHash;
+                boardPart.gameObj = { gameId: gameIdHash, gameName: gameIdHash };
+                gameList.forEach((e) => {
+                    if (e.gameId === gameIdHash) {
+                        boardPart.gameObj = e;
+                    }
+                });
                 boardPart.fetchGame(true);
             } else if (gameList.length) {
                 const lastGameId = gameList[gameList.length - 1].gameId;
                 window.location.hash = `#${lastGameId}`;
                 selectGame.property("value", lastGameId);
-                boardPart.gameId = lastGameId;
+                boardPart.gameObj = { gameId: lastGameId, gameName: lastGameId };
+                gameList.forEach((e) => {
+                    if (e.gameId === lastGameId) {
+                        boardPart.gameObj = e;
+                    }
+                });
                 boardPart.fetchGame(true);
             }
         };
         selectGame.on("change", () => {
-            const gameid = selectGame.property("value");
-            const newHash = `#${gameid}`;
+            const gameId = selectGame.property("value");
+            const newHash = `#${gameId}`;
             if (window.location.hash !== newHash) {
                 window.location.hash = newHash;
             }
-            boardPart.gameId = gameid;
+            boardPart.gameObj = { gameId, gameName: gameId };
+            gameList.forEach((e) => {
+                if (e.gameId === gameId) {
+                    boardPart.gameObj = e;
+                }
+            });
             boardPart.fetchGame(true);
         });
         reloadButton.on("click", () => {
@@ -688,7 +710,12 @@ if (gameBoardProp.multiView) {
                 const gameId = getGameIdHash();
                 if (gameId) {
                     selectGame.property("value", gameId);
-                    boardPart.gameId = gameId;
+                    boardPart.gameObj = { gameId, gameName: gameId };
+                    gameList.forEach((e) => {
+                        if (e.gameId === gameId) {
+                            boardPart.gameObj = e;
+                        }
+                    });
                     boardPart.fetchGame(true);
                 }
             }

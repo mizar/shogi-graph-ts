@@ -5,14 +5,18 @@
 <meta name="viewport" content="width=device-width"/>
 <title>floodgate - <%= htmlWebpackPlugin.options.title %></title>
 <style>
+@media only screen { 
 .kifuforjs .players .mochi .tebanname { overflow: hidden; }
-@media only screen { .scoregraph, .scoregraph svg.scoregraph, .scoregraph input.sfen, .scoregraph p.kifu, .scoregraph pre.reason { width: 570px; } }
+.scoregraph, .scoregraph .nav, .scoregraph svg.scoregraph, .scoregraph input.sfen, .scoregraph p.kifu, .scoregraph pre.reason { width: 570px; }
+.scoregraph .nav, .scoregraph .nav .navtext { white-space: nowrap; overflow: hidden; }
 .scoregraph-container { display: flex; flex-direction: row; flex-wrap: wrap; }
 .scoregraph { width: 580px; flex: 0 0 auto; }
+}
 </style>
 <script type="text/javascript">
 var gameBoardProp = {
     multiView: true,
+    multiViewSpan: 1860000,
     url: (gameid) =>
         [
             "https://mzr.jp/wdoor-latest/",
@@ -66,11 +70,7 @@ var gameBoardProp = {
                     ) || { 1: "" })[1]
             )
             .filter((s) => s)
-            .map((s) =>
-                s.startsWith("wdoor+floodgate-300-10F+")
-                    ? { gameId: s, gameName: s.substring(24) }
-                    : { gameId: s, gameName: s }
-            ),
+            .map((s) => ({ gameId: s, gameName: "☗" + s.split("+")[2] + " ☖" + s.split("+")[3] + " : " + s.split("+")[4] })),
 };
 </script>
 <script type="text/javascript" src="./kifu-for-js-2.0.0.min.js"></script>

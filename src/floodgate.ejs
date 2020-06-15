@@ -5,8 +5,10 @@
 <meta name="viewport" content="width=device-width"/>
 <title>floodgate - <%= htmlWebpackPlugin.options.title %></title>
 <style>
+@media only screen { 
 .kifuforjs .players .mochi .tebanname { overflow: hidden; }
-@media only screen { .scoregraph, .scoregraph svg.scoregraph, .scoregraph input.sfen, .scoregraph p.kifu, .scoregraph pre.reason { width: 570px; } }
+.scoregraph, .scoregraph .nav, .scoregraph svg.scoregraph, .scoregraph input.sfen, .scoregraph p.kifu, .scoregraph pre.reason { width: 570px; }
+}
 </style>
 <script type="text/javascript">
 var gameBoardProp = {

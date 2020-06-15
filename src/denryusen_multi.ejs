@@ -5,16 +5,20 @@
 <meta name="viewport" content="width=device-width"/>
 <title>denryusen - <%= htmlWebpackPlugin.options.title %></title>
 <style>
+@media only screen { 
 .kifuforjs .players .mochi .tebanname { overflow: hidden; }
-@media only screen { .scoregraph, .scoregraph svg.scoregraph, .scoregraph input.sfen, .scoregraph p.kifu, .scoregraph pre.reason { width: 570px; } }
+.scoregraph, .scoregraph .nav, .scoregraph svg.scoregraph, .scoregraph input.sfen, .scoregraph p.kifu, .scoregraph pre.reason { width: 570px; }
+.scoregraph .nav, .scoregraph .nav .navtext { white-space: nowrap; overflow: hidden; }
 .scoregraph-container { display: flex; flex-direction: row; flex-wrap: wrap; }
 .scoregraph { width: 580px; flex: 0 0 auto; }
+}
 </style>
 <script type="text/javascript">
 var denryuUrlBase = "https://mzr.jp/denryusen/dr1_test1";
 var denryuOrgUrlBase = "http://www.golan.sakura.ne.jp/denryusen/dr1_test1";
 var gameBoardProp = {
     multiView: true,
+    multiViewSpan: 1860000,
     url: (gameid) => denryuUrlBase + "/kifufiles/" + gameid + ".csa",
     urlOrg: (gameid) => denryuOrgUrlBase + "/kifufiles/" + gameid + ".csa",
     urlList: denryuUrlBase + "/csalist.php",
