@@ -1513,7 +1513,7 @@ function writeSvg<GElement extends BaseType>(
     }
     if (remainTimeW) {
         const g = charG.append("g").attr("fill", rgba(colorPlayer2));
-        [...remainTimeB].forEach((c, i) => {
+        [...remainTimeW].forEach((c, i) => {
             g.append("use")
                 .attr("xlink:href", "#" + strSubGryphId(remainTimeW, i))
                 .attr(
