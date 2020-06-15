@@ -257,7 +257,10 @@ class GameBoard {
                 this.fetchGame(true);
             });
         iconSet(redoButton, rotateSvg);
-        const navText = navDiv.append("span").attr("class", "navText");
+        navDiv
+            .append("span")
+            .attr("class", "navText")
+            .text(this.gameObj.gameName);
 
         // 時間フォーマット
         const timeFmt = (v: ITimeFormat): string =>
@@ -423,7 +426,6 @@ class GameBoard {
                     sfeninput.node()?.select();
                 });
         }
-        navText.text(this.gameObj.gameName);
         const boarddiv = this.graphDiv.append("div").attr("id", this.uniqid);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (window as any).KifuForJS.loadString(csa, this.uniqid);
@@ -559,7 +561,7 @@ if (gameBoardProp.multiView) {
             .attr("title", "棋譜リストの再読み込み");
         iconSet(reloadButton, refreshSvg);
 
-        const boards: GameBoard[] = [];
+        let boards: GameBoard[] = [];
         const boardsOuter = body
             .append("div")
             .attr("class", "scoregraph-container");
@@ -567,13 +569,6 @@ if (gameBoardProp.multiView) {
         const listLoad = async (): Promise<void> => {
             const logPromise = await fetch(gameBoardProp.urlList);
             const log = await logPromise.text();
-            while (boards.length > 0) {
-                const e = boards.pop();
-                if (e) {
-                    e.enabled = false;
-                    e.graphDiv.remove();
-                }
-            }
             const gameList = gameBoardProp
                 .logParser(log)
                 .filter(
@@ -582,8 +577,8 @@ if (gameBoardProp.multiView) {
                 )
                 .sort(
                     (a, b) =>
-                        parseFloat(b.gameId.substring(b.gameId.length - 14)) -
-                        parseFloat(a.gameId.substring(a.gameId.length - 14))
+                        parseFloat(a.gameId.substring(a.gameId.length - 14)) -
+                        parseFloat(b.gameId.substring(b.gameId.length - 14))
                 );
             if (gameList.length === 0) {
                 return;
@@ -619,18 +614,38 @@ if (gameBoardProp.multiView) {
                     )
                 ).valueOf();
             };
-            const lastGameIdDtValue = gameIdToDtValue(gameList[0].gameId);
-            gameList
+            const lastGameIdDtValue = gameIdToDtValue(
+                gameList[gameList.length - 1].gameId
+            );
+            const gameListFiltered = gameList.filter(
+                (e) =>
+                    lastGameIdDtValue - gameIdToDtValue(e.gameId) <=
+                    (gameBoardProp.multiViewSpan ?? 2400000)
+            );
+            boards.forEach((b) => {
+                const g = gameListFiltered.filter(
+                    (g) => b.gameObj?.gameId === g.gameId
+                );
+                if (g.length > 0) {
+                    b.gameObj = g[0];
+                    b.fetchGame(true);
+                } else {
+                    b.enabled = false;
+                    b.graphDiv.remove();
+                }
+            });
+            boards = boards.filter((b) => b.enabled);
+            gameListFiltered
                 .filter(
-                    (e) =>
-                        lastGameIdDtValue - gameIdToDtValue(e.gameId) <=
-                        (gameBoardProp.multiViewSpan ?? 2400000)
+                    (g) => !boards.some((b) => b.gameObj?.gameId === g.gameId)
                 )
-                .forEach((e) => {
+                .forEach((g) => {
                     const obj = new GameBoard(
-                        boardsOuter.append("div").attr("class", "scoregraph")
+                        boardsOuter
+                            .insert("div", ":first-child")
+                            .attr("class", "scoregraph")
                     );
-                    obj.gameObj = e;
+                    obj.gameObj = g;
                     obj.fetchGame(true);
                     boards.push(obj);
                 });
