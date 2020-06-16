@@ -14,13 +14,13 @@ var denryuOrgUrlBase = "http://www.golan.sakura.ne.jp/denryusen/dr1_test1";
 var gameBoardProp = {
     url: (gameid) => denryuUrlBase + "/kifufiles/" + gameid + ".csa",
     urlOrg: (gameid) => denryuOrgUrlBase + "/kifufiles/" + gameid + ".csa",
-    urlList: denryuUrlBase + "/csalist.php",
+    urlList: denryuUrlBase + "/kifulist.txt",
     logParser: log =>
         log
             .split("\n")
             .map((s) =>
                 s.match(
-                    /^<div><a href="\.\/kifufiles\/((?:[\w.-]+\+){4}\d+)\.csa" *>([^<]+)<\/a>/
+                    /^<div><a href="\.\/kifujs\/((?:[\w.-]+\+){4}\d+)\.html"[^>]*>([^<]+)<\/a>/
                 )
             )
             .filter((s) => s)

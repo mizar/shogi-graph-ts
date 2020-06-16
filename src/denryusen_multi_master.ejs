@@ -12,13 +12,12 @@
 .scoregraph { width: 580px; flex: 0 0 auto; }
 </style>
 <script type="text/javascript">
-var denryuUrlBase = "https://mzr.jp/denryusen/dr1_test1";
-var denryuOrgUrlBase = "http://www.golan.sakura.ne.jp/denryusen/dr1_test1";
+var denryuUrlBase = "https://www.golan.sakura.ne.jp/denryusen/dr1_test1";
 var gameBoardProp = {
     multiView: true,
     multiViewSpan: 1860000,
     url: (gameid) => denryuUrlBase + "/kifufiles/" + gameid + ".csa",
-    urlOrg: (gameid) => denryuOrgUrlBase + "/kifufiles/" + gameid + ".csa",
+    urlOrg: (gameid) => denryuUrlBase + "/kifufiles/" + gameid + ".csa",
     urlList: denryuUrlBase + "/kifulist.txt",
     logParser: log =>
         log

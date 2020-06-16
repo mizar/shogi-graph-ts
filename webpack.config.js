@@ -35,21 +35,33 @@ module.exports = (env) => ({
             }),
             new HtmlWebPackPlugin({
                 title: name,
-                template: "./src/denryusen.ejs",
-                chunks: ["denryusen"],
-                filename: "denryusen.html",
-            }),
-            new HtmlWebPackPlugin({
-                title: name,
                 template: "./src/floodgate_multi.ejs",
                 chunks: ["floodgate_multi"],
                 filename: "floodgate_multi.html",
             }),
             new HtmlWebPackPlugin({
                 title: name,
+                template: "./src/denryusen.ejs",
+                chunks: ["denryusen"],
+                filename: "denryusen.html",
+            }),
+            new HtmlWebPackPlugin({
+                title: name,
                 template: "./src/denryusen_multi.ejs",
                 chunks: ["denryusen_multi"],
                 filename: "denryusen_multi.html",
+            }),
+            new HtmlWebPackPlugin({
+                title: name,
+                template: "./src/denryusen_master.ejs",
+                chunks: ["denryusen_master"],
+                filename: "denryusen_master.html",
+            }),
+            new HtmlWebPackPlugin({
+                title: name,
+                template: "./src/denryusen_multi_master.ejs",
+                chunks: ["denryusen_multi_master"],
+                filename: "denryusen_multi_master.html",
             }),
         ],
         [
