@@ -1107,15 +1107,6 @@ function writeSvg<GElement extends Element>(
         _path.setAttribute("d", `M0,0V${fix(hheight)}${pathTime[1]}V0z`);
         _path.setAttribute("fill", rgba(colorTimeFillW));
         _svg.appendChild(_path);
-        /*
-        create("path")
-            .attr("d", `M0,0V${fix(hheight)}${pathTime[1]}V0z`)
-            .attr("fill", rgba(colorTimeFillW))
-            .nodes()
-            .forEach((e) => {
-                _svg.appendChild(e);
-            });
-        */
     }
     {
         const _path = document.createElementNS(svgNS, "path");
@@ -1124,17 +1115,6 @@ function writeSvg<GElement extends Element>(
         _path.setAttribute("stroke-width", fix(lWidthTime));
         _path.setAttribute("fill", "none");
         _svg.appendChild(_path);
-        /*
-        create("path")
-            .attr("d", `M0,${fix(-hheight)}${pathTime[0]}`)
-            .attr("stroke", rgba(colorTimeLineB))
-            .attr("stroke-width", fix(lWidthTime))
-            .attr("fill", "none")
-            .nodes()
-            .forEach((e) => {
-                _svg.appendChild(e);
-            });
-            */
     }
     {
         const _path = document.createElementNS(svgNS, "path");
@@ -1143,17 +1123,6 @@ function writeSvg<GElement extends Element>(
         _path.setAttribute("stroke-width", fix(lWidthTime));
         _path.setAttribute("fill", "none");
         _svg.appendChild(_path);
-        /*
-        create("path")
-            .attr("d", `M0,${fix(hheight)}${pathTime[1]}`)
-            .attr("stroke", rgba(colorTimeLineW))
-            .attr("stroke-width", fix(lWidthTime))
-            .attr("fill", "none")
-            .nodes()
-            .forEach((e) => {
-                _svg.appendChild(e);
-            });
-            */
     }
     // 文字・目盛類の配置
     const _charG = document.createElementNS(svgNS, "g");
