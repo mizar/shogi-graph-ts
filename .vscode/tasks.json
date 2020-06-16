@@ -11,11 +11,6 @@
         },
         {
             "type": "npm",
-            "script": "dev-server",
-            "problemMatcher": []
-        },
-        {
-            "type": "npm",
             "script": "build:watch",
             "group": "build",
             "problemMatcher": []
@@ -24,6 +19,17 @@
             "type": "npm",
             "script": "build:analyze",
             "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "type": "npm",
+            "script": "build:devel",
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "type": "npm",
+            "script": "dev-server",
             "problemMatcher": []
         },
         {

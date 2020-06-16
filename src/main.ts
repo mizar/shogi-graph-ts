@@ -34,6 +34,11 @@ declare const gameBoardProp: {
     graphHScale?: number;
 };
 
+declare const KifuForJS: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    loadString: (kifu: string, id?: string) => Promise<any>;
+};
+
 const colorSet: { [c: string]: Partial<SvgScoreGraphProp> | undefined } = {
     white: {
         colorBackground: { r: 255, g: 255, b: 255, a: 1 },
@@ -130,14 +135,16 @@ class GameBoard {
     _lastCsa = "";
     enabled = true;
     uniqid = "";
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    kifuStore: Promise<any> | undefined;
     constructor(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         graphDiv: Selection<HTMLDivElement, unknown, HTMLElement, any>
     ) {
         this.graphDiv = graphDiv;
         this.uniqid =
-            new Date().valueOf().toString(16) +
-            Math.floor(Math.random() * 65536).toString(16);
+            new Date().valueOf().toString(36) +
+            Math.floor(Math.random() * 4503599627370496).toString(36);
     }
     async fetchGame(force: boolean): Promise<void> {
         if (!this.gameObj) {
@@ -336,6 +343,7 @@ class GameBoard {
         );
 
         const _svgdiv = document.createElement("div");
+        _svgdiv.setAttribute("class", "svggraph");
         doWrite(
             _svgdiv,
             Object.assign<
@@ -446,9 +454,12 @@ class GameBoard {
                     sfeninput.node()?.select();
                 });
         }
-        const boarddiv = this.graphDiv.append("div").attr("id", this.uniqid);
+        const boarddiv = this.graphDiv
+            .append("div")
+            .attr("class", "kifuforjs")
+            .attr("id", this.uniqid);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (window as any).KifuForJS.loadString(csa, this.uniqid);
+        KifuForJS.loadString(csa, this.uniqid);
         boarddiv
             .select<HTMLButtonElement>("button[class=dl]")
             .attr("disabled", false)
