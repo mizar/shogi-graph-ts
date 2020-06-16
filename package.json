@@ -6,6 +6,7 @@
     "build": "webpack --mode production --env.production",
     "build:analyze": "webpack --mode production --env.analyze",
     "build:watch": "webpack --mode production --env.production --watch",
+    "build:devel": "webpack --mode development",
     "lint": "eslint src/main.ts",
     "lint:fix": "eslint --fix src/main.ts",
     "dev-server": "webpack-dev-server --open",

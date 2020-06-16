@@ -335,8 +335,9 @@ class GameBoard {
             (v, i) => i > 1 && i % 2 === 0 && v !== ""
         );
 
+        const _svgdiv = document.createElement("div");
         doWrite(
-            this.graphDiv.append("div"),
+            _svgdiv,
             Object.assign<
                 Partial<SvgScoreGraphProp>,
                 Partial<SvgScoreGraphProp> | undefined,
@@ -421,6 +422,7 @@ class GameBoard {
                 yaxisSet[this.yaxis]
             )
         );
+        this.graphDiv.node()?.appendChild(_svgdiv);
         if (gameBoardProp.sfenVisible) {
             const sfeninput = this.graphDiv
                 .append("div")

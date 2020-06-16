@@ -25,7 +25,7 @@ module.exports = (env) => ({
         ],
     },
     plugins: [].concat(
-        env && env.production ? [new CleanWebpackPlugin()] : [],
+        [new CleanWebpackPlugin()],
         [
             new HtmlWebPackPlugin({
                 title: name,
@@ -52,31 +52,29 @@ module.exports = (env) => ({
                 filename: "denryusen_multi.html",
             }),
         ],
-        env && env.production
-            ? [
-                  new CompressionPlugin({
-                      // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-                      algorithm(input, compressionOptions, callback) {
-                          return gzip(input, compressionOptions, callback);
-                      },
-                      filename: "[path].gz[query]",
-                      test: /\.(css|html|js|json|map|svg|ttf|otf)$/,
-                      compressionOptions: { numiterations: 15 },
-                      threshold: 10240,
-                      minRatio: 0.8,
-                      deleteOriginalAssets: false,
-                  }),
-                  new CompressionPlugin({
-                      algorithm: "brotliCompress",
-                      filename: "[path].brotli[query]",
-                      test: /\.(css|html|js|json|map|svg|ttf|otf)$/,
-                      compressionOptions: { level: 11 },
-                      threshold: 10240,
-                      minRatio: 0.8,
-                      deleteOriginalAssets: false,
-                  }),
-              ]
-            : [],
+        [
+            new CompressionPlugin({
+                // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+                algorithm(input, compressionOptions, callback) {
+                    return gzip(input, compressionOptions, callback);
+                },
+                filename: "[path].gz[query]",
+                test: /\.(css|html|js|json|map|svg|ttf|otf)$/,
+                compressionOptions: { numiterations: 15 },
+                threshold: 10240,
+                minRatio: 0.8,
+                deleteOriginalAssets: false,
+            }),
+            new CompressionPlugin({
+                algorithm: "brotliCompress",
+                filename: "[path].brotli[query]",
+                test: /\.(css|html|js|json|map|svg|ttf|otf)$/,
+                compressionOptions: { level: 11 },
+                threshold: 10240,
+                minRatio: 0.8,
+                deleteOriginalAssets: false,
+            }),
+        ],
         env && env.analyze ? [new BundleAnalyzerPlugin()] : [],
         [
             new CopyFilePlugin(

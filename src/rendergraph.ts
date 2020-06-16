@@ -3,8 +3,6 @@
  * Copyright (c) Mizar <https://github.com/mizar>
  */
 
-import { BaseType, Selection } from "d3-selection";
-
 export const YAxis = {
     PseudoSigmoid: 0 as const,
     Tanh: 1 as const,
@@ -726,8 +724,8 @@ function getVsc(yaxis: YAxis): Mark[] {
     }
 }
 
-function writeSvg<GElement extends BaseType>(
-    parlent: Selection<GElement, unknown, HTMLElement, unknown>,
+function writeSvg<GElement extends Element>(
+    parlent: GElement,
     {
         maxPly,
         width,
@@ -1051,37 +1049,41 @@ function writeSvg<GElement extends BaseType>(
             rType === 1 || rType === 2 ? (fSizeRh * gryphHeight) / 2 : 0
         ) + pad;
     // SVG画像親要素
-    const svg = parlent
-        .append("svg")
-        .attr("xmlns", "http://www.w3.org/2000/svg")
-        .attr("xmlns:xlink", "http://www.w3.org/1999/xlink")
-        .attr(
-            "viewBox",
-            `${fix(-lPad)} ${fix(-tPad - hheight)} ${fix(
-                width + lPad + rPad
-            )} ${fix(height + tPad + bPad)}`
-        )
-        .attr("class", "scoregraph");
+    const svgNS = "http://www.w3.org/2000/svg";
+    const xlinkNS = "http://www.w3.org/1999/xlink";
+    const _svg = document.createElementNS(svgNS, "svg");
+    _svg.setAttribute(
+        "viewBox",
+        `${fix(-lPad)} ${fix(-tPad - hheight)} ${fix(
+            width + lPad + rPad
+        )} ${fix(height + tPad + bPad)}`
+    );
+    _svg.setAttribute("class", "scoregraph");
     // 埋め込み文字グリフ
-    const defs = svg.append("defs");
+    const _defs = document.createElementNS(svgNS, "defs");
+    _svg.appendChild(_defs);
     Object.keys(gryphData).forEach((char) => {
         const data = gryphData[char];
         if (data) {
-            defs.append("path")
-                .attr("id", strSubGryphId(char, 0))
-                .attr("d", data.p)
-                .attr("data-font-family", data.f.n)
-                .attr("data-font-src", data.f.s)
-                .attr("data-font-license", data.f.l);
+            const _path = document.createElementNS(svgNS, "path");
+            _defs.appendChild(_path);
+            _path.setAttribute("id", strSubGryphId(char, 0));
+            _path.setAttribute("d", data.p);
+            _path.setAttribute("data-font-family", data.f.n);
+            _path.setAttribute("data-font-src", data.f.s);
+            _path.setAttribute("data-font-license", data.f.l);
         }
     });
     // 背景塗り潰し
-    svg.append("rect")
-        .attr("x", fix(-lPad))
-        .attr("y", fix(-tPad - hheight))
-        .attr("width", fix(width + lPad + rPad))
-        .attr("height", fix(height + tPad + bPad))
-        .attr("fill", rgba(colorBackground));
+    {
+        const _rect = document.createElementNS(svgNS, "rect");
+        _rect.setAttribute("x", fix(-lPad));
+        _rect.setAttribute("y", fix(-tPad - hheight));
+        _rect.setAttribute("width", fix(width + lPad + rPad));
+        _rect.setAttribute("height", fix(height + tPad + bPad));
+        _rect.setAttribute("fill", rgba(colorBackground));
+        _svg.appendChild(_rect);
+    }
     // 残り持ち時間推移の描写
     const pathTime = [0, 1].map((t) =>
         timePar
@@ -1094,25 +1096,68 @@ function writeSvg<GElement extends BaseType>(
             )
             .join("")
     );
-    svg.append("path")
-        .attr("d", `M0,0V${fix(-hheight)}${pathTime[0]}V0z`)
-        .attr("fill", rgba(colorTimeFillB));
-    svg.append("path")
-        .attr("d", `M0,0V${fix(hheight)}${pathTime[1]}V0z`)
-        .attr("fill", rgba(colorTimeFillW));
-    svg.append("path")
-        .attr("d", `M0,${fix(-hheight)}${pathTime[0]}`)
-        .attr("stroke", rgba(colorTimeLineB))
-        .attr("stroke-width", fix(lWidthTime))
-        .attr("fill", "none");
-    svg.append("path")
-        .attr("d", `M0,${fix(hheight)}${pathTime[1]}`)
-        .attr("stroke", rgba(colorTimeLineW))
-        .attr("stroke-width", fix(lWidthTime))
-        .attr("fill", "none");
+    {
+        const _path = document.createElementNS(svgNS, "path");
+        _path.setAttribute("d", `M0,0V${fix(-hheight)}${pathTime[0]}V0z`);
+        _path.setAttribute("fill", rgba(colorTimeFillB));
+        _svg.appendChild(_path);
+    }
+    {
+        const _path = document.createElementNS(svgNS, "path");
+        _path.setAttribute("d", `M0,0V${fix(hheight)}${pathTime[1]}V0z`);
+        _path.setAttribute("fill", rgba(colorTimeFillW));
+        _svg.appendChild(_path);
+        /*
+        create("path")
+            .attr("d", `M0,0V${fix(hheight)}${pathTime[1]}V0z`)
+            .attr("fill", rgba(colorTimeFillW))
+            .nodes()
+            .forEach((e) => {
+                _svg.appendChild(e);
+            });
+        */
+    }
+    {
+        const _path = document.createElementNS(svgNS, "path");
+        _path.setAttribute("d", `M0,${fix(-hheight)}${pathTime[0]}`);
+        _path.setAttribute("stroke", rgba(colorTimeLineB));
+        _path.setAttribute("stroke-width", fix(lWidthTime));
+        _path.setAttribute("fill", "none");
+        _svg.appendChild(_path);
+        /*
+        create("path")
+            .attr("d", `M0,${fix(-hheight)}${pathTime[0]}`)
+            .attr("stroke", rgba(colorTimeLineB))
+            .attr("stroke-width", fix(lWidthTime))
+            .attr("fill", "none")
+            .nodes()
+            .forEach((e) => {
+                _svg.appendChild(e);
+            });
+            */
+    }
+    {
+        const _path = document.createElementNS(svgNS, "path");
+        _path.setAttribute("d", `M0,${fix(hheight)}${pathTime[1]}`);
+        _path.setAttribute("stroke", rgba(colorTimeLineW));
+        _path.setAttribute("stroke-width", fix(lWidthTime));
+        _path.setAttribute("fill", "none");
+        _svg.appendChild(_path);
+        /*
+        create("path")
+            .attr("d", `M0,${fix(hheight)}${pathTime[1]}`)
+            .attr("stroke", rgba(colorTimeLineW))
+            .attr("stroke-width", fix(lWidthTime))
+            .attr("fill", "none")
+            .nodes()
+            .forEach((e) => {
+                _svg.appendChild(e);
+            });
+            */
+    }
     // 文字・目盛類の配置
-    const charG = svg.append("g");
-    const scaleG = svg.append("g");
+    const _charG = document.createElementNS(svgNS, "g");
+    const _scaleG = document.createElementNS(svgNS, "g");
     let pathEBold = "";
     let pathBld = "";
     let pathNml = "";
@@ -1178,40 +1223,46 @@ function writeSvg<GElement extends BaseType>(
                 const y = fix(-hheight * v);
                 const str = e.c;
                 if (e.s) {
-                    const g = charG.append("g").attr("fill", vRgb(v));
+                    const _g = document.createElementNS(svgNS, "g");
+                    _g.setAttribute("fill", vRgb(v));
+                    let _strPxWidth = strPxWidth(str);
                     [...str].forEach((c, i) => {
-                        g.append("use")
-                            .attr("xlink:href", "#" + strSubGryphId(str, i))
-                            .attr(
-                                "transform",
-                                `matrix(${fix(fSizeLw)} 0 0 ${fix(
-                                    fSizeLh
-                                )} ${fix(
-                                    -fSizeLw *
-                                        (strPxWidth(str.substring(i + 1)) +
-                                            strPxWidth(c) / 2) -
-                                        scalePad
-                                )} ${y})`
-                            );
+                        const _use = document.createElementNS(svgNS, "use");
+                        _use.setAttributeNS(
+                            xlinkNS,
+                            "href",
+                            `#${strSubGryphId(str, i)}`
+                        );
+                        const _charPxWidth = strPxWidth(c);
+                        _strPxWidth -= _charPxWidth;
+                        _use.setAttribute(
+                            "transform",
+                            `matrix(${fix(fSizeLw)} 0 0 ${fix(fSizeLh)} ${fix(
+                                -fSizeLw * (_strPxWidth + _charPxWidth / 2) -
+                                    scalePad
+                            )} ${y})`
+                        );
+                        _g.appendChild(_use);
                     });
+                    _charG.appendChild(_g);
                 }
                 if (e.m !== Line.None) {
-                    scaleG
-                        .append("path")
-                        .attr("d", `M0,${y}H${-scaleLength}`)
-                        .attr("stroke", vRgb(v))
-                        .attr(
-                            "stroke-width",
-                            fix(
-                                e.m === Line.EBld
-                                    ? lWidthBorder
-                                    : e.m === Line.Bld
-                                    ? lWidthBld
-                                    : e.m === Line.Nml
-                                    ? lWidthNml
-                                    : 0
-                            )
-                        );
+                    const _path = document.createElementNS(svgNS, "path");
+                    _path.setAttribute("d", `M0,${y}H${-scaleLength}`);
+                    _path.setAttribute("stroke", vRgb(v));
+                    _path.setAttribute(
+                        "stroke-width",
+                        fix(
+                            e.m === Line.EBld
+                                ? lWidthBorder
+                                : e.m === Line.Bld
+                                ? lWidthBld
+                                : e.m === Line.Nml
+                                ? lWidthNml
+                                : 0
+                        )
+                    );
+                    _scaleG.appendChild(_path);
                 }
             });
             break;
@@ -1221,40 +1272,46 @@ function writeSvg<GElement extends BaseType>(
                 const y = fix(-hheight * v);
                 const str = e.c;
                 if (e.s) {
-                    const g = charG.append("g").attr("fill", vRgb(v));
+                    const _g = document.createElementNS(svgNS, "g");
+                    _g.setAttribute("fill", vRgb(v));
+                    let _strPxWidth = strPxWidth(str);
                     [...str].forEach((c, i) => {
-                        g.append("use")
-                            .attr("xlink:href", "#" + strSubGryphId(str, i))
-                            .attr(
-                                "transform",
-                                `matrix(${fix(fSizeLw)} 0 0 ${fix(
-                                    fSizeLh
-                                )} ${fix(
-                                    -fSizeLw *
-                                        (strPxWidth(str.substring(i)) -
-                                            strPxWidth(c) / 2) -
-                                        scalePad
-                                )} ${y})`
-                            );
+                        const _use = document.createElementNS(svgNS, "use");
+                        _use.setAttributeNS(
+                            xlinkNS,
+                            "href",
+                            `#${strSubGryphId(str, i)}`
+                        );
+                        const _charPxWidth = strPxWidth(c);
+                        _use.setAttribute(
+                            "transform",
+                            `matrix(${fix(fSizeLw)} 0 0 ${fix(fSizeLh)} ${fix(
+                                -fSizeLw * (_strPxWidth - _charPxWidth / 2) -
+                                    scalePad
+                            )} ${y})`
+                        );
+                        _strPxWidth -= _charPxWidth;
+                        _g.appendChild(_use);
                     });
+                    _charG.appendChild(_g);
                 }
                 if (e.m !== Line.None) {
-                    scaleG
-                        .append("path")
-                        .attr("d", `M0,${y}H${fix(-scaleLength)}`)
-                        .attr("stroke", vRgb(v))
-                        .attr(
-                            "stroke-width",
-                            fix(
-                                e.m === Line.EBld
-                                    ? lWidthBorder
-                                    : e.m === Line.Bld
-                                    ? lWidthBld
-                                    : e.m === Line.Nml
-                                    ? lWidthNml
-                                    : 0
-                            )
-                        );
+                    const _path = document.createElementNS(svgNS, "path");
+                    _path.setAttribute("d", `M0,${y}H${fix(-scaleLength)}`);
+                    _path.setAttribute("stroke", vRgb(v));
+                    _path.setAttribute(
+                        "stroke-width",
+                        fix(
+                            e.m === Line.EBld
+                                ? lWidthBorder
+                                : e.m === Line.Bld
+                                ? lWidthBld
+                                : e.m === Line.Nml
+                                ? lWidthNml
+                                : 0
+                        )
+                    );
+                    _scaleG.appendChild(_path);
                 }
             });
             break;
@@ -1266,41 +1323,48 @@ function writeSvg<GElement extends BaseType>(
                 const y = fix(-hheight * v);
                 const str = e.c;
                 if (e.s) {
-                    const g = charG.append("g").attr("fill", vRgb(v));
+                    const _g = document.createElementNS(svgNS, "g");
+                    _g.setAttribute("fill", vRgb(v));
                     [...str].forEach((c, i) => {
-                        g.append("use")
-                            .attr("xlink:href", "#" + strSubGryphId(str, i))
-                            .attr(
-                                "transform",
-                                `matrix(${fix(fSizeRw)} 0 0 ${fix(
-                                    fSizeRh
-                                )} ${fix(
-                                    fSizeRw *
-                                        (strPxWidth(str.substring(0, i)) +
-                                            strPxWidth(c) / 2) +
-                                        scalePad +
-                                        width
-                                )} ${y})`
-                            );
+                        const _use = document.createElementNS(svgNS, "use");
+                        _use.setAttributeNS(
+                            xlinkNS,
+                            "href",
+                            `#${strSubGryphId(str, i)}`
+                        );
+                        _use.setAttribute(
+                            "transform",
+                            `matrix(${fix(fSizeRw)} 0 0 ${fix(fSizeRh)} ${fix(
+                                fSizeRw *
+                                    (strPxWidth(str.substring(0, i)) +
+                                        strPxWidth(c) / 2) +
+                                    scalePad +
+                                    width
+                            )} ${y})`
+                        );
+                        _charG.appendChild(_use);
                     });
                 }
                 if (e.m !== Line.None) {
-                    scaleG
-                        .append("path")
-                        .attr("d", `M${width},${y}h${fix(scaleLength)}`)
-                        .attr("stroke", vRgb(v))
-                        .attr(
-                            "stroke-width",
-                            fix(
-                                e.m === Line.EBld
-                                    ? lWidthBorder
-                                    : e.m === Line.Bld
-                                    ? lWidthBld
-                                    : e.m === Line.Nml
-                                    ? lWidthNml
-                                    : 0
-                            )
-                        );
+                    const _path = document.createElementNS(svgNS, "path");
+                    _path.setAttribute(
+                        "d",
+                        `M${width},${y}h${fix(scaleLength)}`
+                    );
+                    _path.setAttribute("stroke", vRgb(v));
+                    _path.setAttribute(
+                        "stroke-width",
+                        fix(
+                            e.m === Line.EBld
+                                ? lWidthBorder
+                                : e.m === Line.Bld
+                                ? lWidthBld
+                                : e.m === Line.Nml
+                                ? lWidthNml
+                                : 0
+                        )
+                    );
+                    _scaleG.appendChild(_path);
                 }
             });
             break;
@@ -1310,41 +1374,50 @@ function writeSvg<GElement extends BaseType>(
                 const y = fix(-hheight * v);
                 const str = e.c;
                 if (e.s) {
-                    const g = charG.append("g").attr("fill", vRgb(v));
+                    const _g = document.createElementNS(svgNS, "g");
+                    _g.setAttribute("fill", vRgb(v));
+                    let _strPxWidth = 0;
                     [...str].forEach((c, i) => {
-                        g.append("use")
-                            .attr("xlink:href", "#" + strSubGryphId(str, i))
-                            .attr(
-                                "transform",
-                                `matrix(${fix(fSizeRw)} 0 0 ${fix(
-                                    fSizeRh
-                                )} ${fix(
-                                    fSizeRw *
-                                        (strPxWidth(str.substring(0, i)) +
-                                            strPxWidth(c) / 2) +
-                                        scalePad +
-                                        width
-                                )} ${y})`
-                            );
+                        const _use = document.createElementNS(svgNS, "use");
+                        _use.setAttributeNS(
+                            xlinkNS,
+                            "href",
+                            `#${strSubGryphId(str, i)}`
+                        );
+                        const _charPxWidth = strPxWidth(c);
+                        _use.setAttribute(
+                            "transform",
+                            `matrix(${fix(fSizeRw)} 0 0 ${fix(fSizeRh)} ${fix(
+                                fSizeRw * (_strPxWidth + _charPxWidth / 2) +
+                                    scalePad +
+                                    width
+                            )} ${y})`
+                        );
+                        _strPxWidth += _charPxWidth;
+                        _g.appendChild(_use);
                     });
+                    _charG.appendChild(_g);
                 }
                 if (e.m !== Line.None) {
-                    scaleG
-                        .append("path")
-                        .attr("d", `M${width},${y}h${fix(scaleLength)}`)
-                        .attr("stroke", vRgb(v))
-                        .attr(
-                            "stroke-width",
-                            fix(
-                                e.m === Line.EBld
-                                    ? lWidthBorder
-                                    : e.m === Line.Bld
-                                    ? lWidthBld
-                                    : e.m === Line.Nml
-                                    ? lWidthNml
-                                    : 0
-                            )
-                        );
+                    const _path = document.createElementNS(svgNS, "path");
+                    _path.setAttribute(
+                        "d",
+                        `M${width},${y}h${fix(scaleLength)}`
+                    );
+                    _path.setAttribute("stroke", vRgb(v));
+                    _path.setAttribute(
+                        "stroke-width",
+                        fix(
+                            e.m === Line.EBld
+                                ? lWidthBorder
+                                : e.m === Line.Bld
+                                ? lWidthBld
+                                : e.m === Line.Nml
+                                ? lWidthNml
+                                : 0
+                        )
+                    );
+                    _scaleG.appendChild(_path);
                 }
             });
             break;
@@ -1352,31 +1425,35 @@ function writeSvg<GElement extends BaseType>(
     switch (tType) {
         case XScale.Ply:
             {
-                const g = charG.append("g").attr("fill", rgba(colorPly));
+                const _g = document.createElementNS(svgNS, "g");
+                _g.setAttribute("fill", rgba(colorPly));
                 hsc.forEach((e) => {
                     if (e.s) {
                         const str = `${e.v}`;
                         [...str].forEach((c, i) => {
-                            g.append("use")
-                                .attr("xlink:href", "#" + strSubGryphId(str, i))
-                                .attr(
-                                    "transform",
-                                    `matrix(${fix(fSizeBw)} 0 0 ${fix(
-                                        fSizeBh
-                                    )} ${fix(
-                                        e.v +
-                                            fSizeBw *
-                                                (strPxWidth(
-                                                    str.substring(0, i)
-                                                ) +
-                                                    strPxWidth(c) / 2 -
-                                                    strPxWidth(str) / 2)
-                                    )} ${fix(
-                                        -hheight -
-                                            (fSizeBh * gryphHeight) / 2 -
-                                            scalePad
-                                    )})`
-                                );
+                            const _use = document.createElementNS(svgNS, "use");
+                            _use.setAttributeNS(
+                                xlinkNS,
+                                "href",
+                                `#${strSubGryphId(str, i)}`
+                            );
+                            _use.setAttribute(
+                                "transform",
+                                `matrix(${fix(fSizeBw)} 0 0 ${fix(
+                                    fSizeBh
+                                )} ${fix(
+                                    e.v +
+                                        fSizeBw *
+                                            (strPxWidth(str.substring(0, i)) +
+                                                strPxWidth(c) / 2 -
+                                                strPxWidth(str) / 2)
+                                )} ${fix(
+                                    -hheight -
+                                        (fSizeBh * gryphHeight) / 2 -
+                                        scalePad
+                                )})`
+                            );
+                            _g.appendChild(_use);
                         });
                         pathBorder += `M${e.v},${fix(
                             -hheight - scaleLength
@@ -1389,65 +1466,79 @@ function writeSvg<GElement extends BaseType>(
     switch (bType) {
         case XScale.Ply:
             {
-                const g = charG.append("g").attr("fill", rgba(colorPly));
+                const _g = document.createElementNS(svgNS, "g");
+                _g.setAttribute("fill", rgba(colorPly));
                 hsc.forEach((e) => {
                     if (e.s) {
                         const str = `${e.v}`;
                         [...str].forEach((c, i) => {
-                            g.append("use")
-                                .attr("xlink:href", "#" + strSubGryphId(str, i))
-                                .attr(
-                                    "transform",
-                                    `matrix(${fix(fSizeBw)} 0 0 ${fix(
-                                        fSizeBh
-                                    )} ${fix(
-                                        e.v +
-                                            fSizeBw *
-                                                (strPxWidth(
-                                                    str.substring(0, i)
-                                                ) +
-                                                    strPxWidth(c) / 2 -
-                                                    strPxWidth(str) / 2)
-                                    )} ${fix(
-                                        hheight +
-                                            (fSizeBh * gryphHeight) / 2 +
-                                            scalePad
-                                    )})`
-                                );
+                            const _use = document.createElementNS(svgNS, "use");
+                            _use.setAttributeNS(
+                                xlinkNS,
+                                "href",
+                                `#${strSubGryphId(str, i)}`
+                            );
+                            _use.setAttribute(
+                                "transform",
+                                `matrix(${fix(fSizeBw)} 0 0 ${fix(
+                                    fSizeBh
+                                )} ${fix(
+                                    e.v +
+                                        fSizeBw *
+                                            (strPxWidth(str.substring(0, i)) +
+                                                strPxWidth(c) / 2 -
+                                                strPxWidth(str) / 2)
+                                )} ${fix(
+                                    hheight +
+                                        (fSizeBh * gryphHeight) / 2 +
+                                        scalePad
+                                )})`
+                            );
+                            _g.appendChild(_use);
                         });
                         pathBorder += `M${e.v},${fix(hheight)}v${fix(
                             scaleLength
                         )}`;
                     }
                 });
+                _charG.appendChild(_g);
             }
             break;
     }
+    _svg.appendChild(_charG);
+    _svg.appendChild(_scaleG);
     // 目盛の描写
     if (pathNml) {
-        svg.append("path")
-            .attr("d", pathNml)
-            .attr("stroke", rgba(colorGridNml))
-            .attr("stroke-width", fix(lWidthNml));
+        const _path = document.createElementNS(svgNS, "path");
+        _path.setAttribute("d", pathNml);
+        _path.setAttribute("stroke", rgba(colorGridNml));
+        _path.setAttribute("stroke-width", fix(lWidthNml));
+        _path.setAttribute("fill", "none");
+        _svg.appendChild(_path);
     }
     if (pathBld) {
-        svg.append("path")
-            .attr("d", pathBld)
-            .attr("stroke", rgba(colorGridBld))
-            .attr("stroke-width", fix(lWidthBld));
+        const _path = document.createElementNS(svgNS, "path");
+        _path.setAttribute("d", pathBld);
+        _path.setAttribute("stroke", rgba(colorGridBld));
+        _path.setAttribute("stroke-width", fix(lWidthBld));
+        _path.setAttribute("fill", "none");
+        _svg.appendChild(_path);
     }
     if (pathEBold) {
-        svg.append("path")
-            .attr("d", pathEBold)
-            .attr("stroke", rgba(colorGridEBld))
-            .attr("stroke-width", fix(lWidthBorder));
+        const _path = document.createElementNS(svgNS, "path");
+        _path.setAttribute("d", pathEBold);
+        _path.setAttribute("stroke", rgba(colorGridEBld));
+        _path.setAttribute("stroke-width", fix(lWidthBorder));
+        _path.setAttribute("fill", "none");
+        _svg.appendChild(_path);
     }
     if (pathBorder) {
-        svg.append("path")
-            .attr("d", pathBorder)
-            .attr("stroke", rgba(colorGridBorder))
-            .attr("stroke-width", fix(lWidthBorder))
-            .attr("fill", "none");
+        const _path = document.createElementNS(svgNS, "path");
+        _path.setAttribute("d", pathBorder);
+        _path.setAttribute("stroke", rgba(colorGridBorder));
+        _path.setAttribute("stroke-width", fix(lWidthBorder));
+        _path.setAttribute("fill", "none");
+        _svg.appendChild(_path);
     }
     if (score.length) {
         let pathA = "";
@@ -1462,88 +1553,115 @@ function writeSvg<GElement extends BaseType>(
                 }
             }
         });
-        const scoreG = svg.append("g");
-        scoreG
-            .append("path")
-            .attr("d", pathA)
-            .attr("fill", "none")
-            .attr("stroke", rgba(colorPlayer1))
-            .attr("stroke-width", fix(lWidthScore));
-        scoreG
-            .append("path")
-            .attr("d", pathB)
-            .attr("fill", "none")
-            .attr("stroke", rgba(colorPlayer2))
-            .attr("stroke-width", fix(lWidthScore));
-        const scoreCircleG = scoreG.append("g");
-        score.forEach((v, i) => {
-            if (!isNaN(v)) {
-                const y = fix(-hheight * scoreEval(v));
-                const g = scoreCircleG.append("g");
-                g.append("title").text(comment[i]);
-                g.append("circle")
-                    .attr("cx", i)
-                    .attr("cy", y)
-                    .attr("r", fix(cRadiusScore))
-                    .attr(
-                        "fill",
-                        rgba(i % 2 === 1 ? colorPlayer1 : colorPlayer2)
-                    )
-                    .on("click", () => {
-                        plyCallback(i);
-                    });
-            }
-        });
+        const _scoreG = document.createElementNS(svgNS, "g");
+        {
+            const _path = document.createElementNS(svgNS, "path");
+            _path.setAttribute("d", pathA);
+            _path.setAttribute("fill", "none");
+            _path.setAttribute("stroke", rgba(colorPlayer1));
+            _path.setAttribute("stroke-width", fix(lWidthScore));
+            _scoreG.appendChild(_path);
+        }
+        {
+            const _path = document.createElementNS(svgNS, "path");
+            _path.setAttribute("d", pathB);
+            _path.setAttribute("fill", "none");
+            _path.setAttribute("stroke", rgba(colorPlayer2));
+            _path.setAttribute("stroke-width", fix(lWidthScore));
+            _scoreG.appendChild(_path);
+        }
+        const _scoreCircleG = document.createElementNS(svgNS, "g");
+        score
+            .map((v, i) => ({ v, i }))
+            .filter((e) => !isNaN(e.v))
+            .forEach((e) => {
+                const _g = document.createElementNS(svgNS, "g");
+                const _title = document.createElementNS(svgNS, "title");
+                _title.appendChild(document.createTextNode(comment[e.i]));
+                _g.appendChild(_title);
+                const _circle = document.createElementNS(svgNS, "circle");
+                _circle.setAttribute("cx", `${e.i}`);
+                _circle.setAttribute("cy", fix(-hheight * scoreEval(e.v)));
+                _circle.setAttribute("r", fix(cRadiusScore));
+                _circle.setAttribute(
+                    "fill",
+                    rgba(e.i % 2 === 1 ? colorPlayer1 : colorPlayer2)
+                );
+                _circle.addEventListener("click", () => {
+                    plyCallback(e.i);
+                });
+                _g.appendChild(_circle);
+                _scoreCircleG.appendChild(_g);
+            });
+        _scoreG.appendChild(_scoreCircleG);
+        _svg.appendChild(_scoreG);
     }
     if (remainTimeB) {
-        const g = charG.append("g").attr("fill", rgba(colorPlayer1));
+        const _g = document.createElementNS(svgNS, "g");
+        _g.setAttribute("fill", rgba(colorPlayer1));
         [...remainTimeB].forEach((c, i) => {
-            g.append("use")
-                .attr("xlink:href", "#" + strSubGryphId(remainTimeB, i))
-                .attr(
-                    "transform",
-                    `matrix(${fix(fSizeLw)} 0 0 ${fix(fSizeLh)} ${fix(
-                        fSizeLw *
-                            (strPxWidth(remainTimeB.substring(0, i)) +
-                                strPxWidth(c) / 2 +
-                                1)
-                    )} ${fix(-hheight + fSizeLh)})`
-                );
+            const _use = document.createElementNS(svgNS, "use");
+            _use.setAttributeNS(
+                xlinkNS,
+                "href",
+                `#${strSubGryphId(remainTimeB, i)}`
+            );
+            _use.setAttribute(
+                "transform",
+                `matrix(${fix(fSizeLw)} 0 0 ${fix(fSizeLh)} ${fix(
+                    fSizeLw *
+                        (strPxWidth(remainTimeB.substring(0, i)) +
+                            strPxWidth(c) / 2 +
+                            1)
+                )} ${fix(-hheight + fSizeLh)})`
+            );
+            _g.appendChild(_use);
         });
+        _svg.appendChild(_g);
     }
     if (remainTimeW) {
-        const g = charG.append("g").attr("fill", rgba(colorPlayer2));
+        const _g = document.createElementNS(svgNS, "g");
+        _g.setAttribute("fill", rgba(colorPlayer2));
         [...remainTimeW].forEach((c, i) => {
-            g.append("use")
-                .attr("xlink:href", "#" + strSubGryphId(remainTimeW, i))
-                .attr(
-                    "transform",
-                    `matrix(${fix(fSizeLw)} 0 0 ${fix(fSizeLh)} ${fix(
-                        fSizeLw *
-                            (strPxWidth(remainTimeW.substring(0, i)) +
-                                strPxWidth(c) / 2 +
-                                1)
-                    )} ${fix(hheight - fSizeLh)})`
-                );
+            const _use = document.createElementNS(svgNS, "use");
+            _use.setAttributeNS(
+                xlinkNS,
+                "href",
+                `#${strSubGryphId(remainTimeW, i)}`
+            );
+            _use.setAttribute(
+                "transform",
+                `matrix(${fix(fSizeLw)} 0 0 ${fix(fSizeLh)} ${fix(
+                    fSizeLw *
+                        (strPxWidth(remainTimeW.substring(0, i)) +
+                            strPxWidth(c) / 2 +
+                            1)
+                )} ${fix(hheight - fSizeLh)})`
+            );
+            _g.appendChild(_use);
         });
+        _svg.appendChild(_g);
     }
     if (caption && fSizeCap) {
-        svg.append("text")
-            .attr("x", fix(width / 2))
-            .attr("y", fix(-hheight - tCapBase))
-            .attr("text-anchor", "middle")
-            .attr("font-size", fix(fSizeCap))
-            .attr("fill", rgba(colorCap))
-            .append("a")
-            .attr("xlink:href", capLink ?? "")
-            .attr("style", `color:${rgba(colorCap)}`)
-            .attr("target", "_blank")
-            .text(caption);
+        const _text = document.createElementNS(svgNS, "text");
+        _text.setAttribute("x", fix(width / 2));
+        _text.setAttribute("y", fix(-hheight - tCapBase));
+        _text.setAttribute("text-anchor", "middle");
+        _text.setAttribute("font-size", fix(fSizeCap));
+        _text.setAttribute("fill", rgba(colorCap));
+        const _a = document.createElementNS(svgNS, "a");
+        _a.setAttributeNS(xlinkNS, "href", capLink ?? "");
+        _a.setAttribute("style", `color:${rgba(colorCap)}`);
+        _a.setAttribute("target", "_blank");
+        _a.appendChild(document.createTextNode(caption));
+        _text.appendChild(_a);
+        _svg.appendChild(_text);
     }
+    parlent.appendChild(_svg);
 }
 
-export function doWrite<GElement extends BaseType>(
-    parlent: Selection<GElement, unknown, HTMLElement, unknown>,
+export function doWrite<GElement extends Element>(
+    parlent: GElement,
     p: Partial<SvgScoreGraphProp>
 ): void {
     writeSvg(
