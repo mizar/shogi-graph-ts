@@ -34,11 +34,10 @@ declare const gameBoardProp: {
     graphHScale?: number;
 };
 
+type KifuStore = { loadKifuSync(kifu: string, fileName?: string): void };
+
 declare const KifuForJS: {
-    loadString: (
-        kifu: string,
-        id?: string
-    ) => Promise<{ loadKifuSync(kifu: string, fileName?: string): void }>;
+    loadString: (kifu: string, id?: string) => Promise<KifuStore>;
 };
 
 const colorSet: { [c: string]: Partial<SvgScoreGraphProp> | undefined } = {
@@ -140,17 +139,15 @@ class GameBoard {
     boardDiv: Selection<HTMLDivElement, any, HTMLElement, any>;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     kifDiv: Selection<HTMLDivElement, any, HTMLElement, any>;
-    gameObj: GameObj | undefined;
+    gameObj?: GameObj;
     color = "";
     yaxis = "";
     _lastFetch = NaN;
-    _lastGame: GameObj | undefined;
+    _lastGame?: GameObj;
     _lastCsa = "";
     enabled = true;
     uniqid = "";
-    kifuStore:
-        | Promise<{ loadKifuSync(kifu: string, fileName?: string): void }>
-        | undefined;
+    kifuStore?: KifuStore;
     constructor(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         boardSetDiv: Selection<HTMLDivElement, any, HTMLElement, any>
@@ -482,11 +479,11 @@ class GameBoard {
         // 盤面
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         if (this.kifuStore) {
-            this.kifuStore.then((res) => {
-                res.loadKifuSync(csa);
-            });
+            this.kifuStore.loadKifuSync(csa);
         } else {
-            this.kifuStore = KifuForJS.loadString(csa, this.uniqid);
+            KifuForJS.loadString(csa, this.uniqid).then((kifuStore) => {
+                this.kifuStore = kifuStore;
+            });
         }
         this.boardDiv
             .select<HTMLButtonElement>("button[class=dl]")
