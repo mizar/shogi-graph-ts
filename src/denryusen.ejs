@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width"/>
-<title>denryusen - <%= htmlWebpackPlugin.options.title %></title>
+<title>denryusen_single - <%= htmlWebpackPlugin.options.title %></title>
 <style>
 .kifuforjs .players .mochi .tebanname { overflow: hidden; }
 .scoregraph, .scoregraph .nav, .scoregraph svg.scoregraph, .scoregraph input.sfen, .scoregraph p.kifu, .scoregraph pre.reason { width: 570px; }
@@ -30,6 +30,8 @@ var gameBoardProp = {
                     .replace(/▲/g, "☗")
                     .replace(/△/g, "☖"),
             })),
+    sfenVisible: true,
+    kifuVisible: true,
 };
 </script>
 <script type="text/javascript" src="./kifu-for-js-2.0.0.min.js"></script>
