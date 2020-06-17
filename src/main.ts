@@ -11,6 +11,7 @@ import copySvg from "tabler-icons/icons/file-text.svg";
 import saveSvg from "tabler-icons/icons/photo.svg";
 import rotateSvg from "tabler-icons/icons/rotate.svg";
 import refreshSvg from "tabler-icons/icons/refresh.svg";
+import KifuStore from "kifu-for-js/bundle/src/stores/KifuStore";
 
 interface GameObj {
     gameId: string;
@@ -34,10 +35,9 @@ declare const gameBoardProp: {
     graphHScale?: number;
 };
 
-type KifuStore = { loadKifuSync(kifu: string, fileName?: string): void };
-
 declare const KifuForJS: {
     loadString: (kifu: string, id?: string) => Promise<KifuStore>;
+    load(filePath: string, id?: string): Promise<KifuStore>;
 };
 
 const colorSet: { [c: string]: Partial<SvgScoreGraphProp> | undefined } = {
