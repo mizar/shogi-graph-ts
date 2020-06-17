@@ -52,6 +52,10 @@ const colorSet: { [c: string]: Partial<SvgScoreGraphProp> | undefined } = {
         colorPlayer1: { r: 255, g: 51, b: 0, a: 1 },
         colorPlayer2: { r: 0, g: 51, b: 255, a: 1 },
         colorCap: { r: 0, g: 0, b: 0, a: 1 },
+        colorTimeLineB: { r: 255, g: 128, b: 128, a: 1 },
+        colorTimeFillB: { r: 255, g: 128, b: 128, a: 0.25 },
+        colorTimeLineW: { r: 128, g: 128, b: 255, a: 1 },
+        colorTimeFillW: { r: 128, g: 128, b: 255, a: 0.25 },
     },
     black: {
         colorBackground: { r: 0, g: 0, b: 0, a: 1 },
@@ -64,6 +68,10 @@ const colorSet: { [c: string]: Partial<SvgScoreGraphProp> | undefined } = {
         colorPlayer1: { r: 255, g: 136, b: 0, a: 1 },
         colorPlayer2: { r: 0, g: 136, b: 255, a: 1 },
         colorCap: { r: 255, g: 255, b: 255, a: 1 },
+        colorTimeLineB: { r: 255, g: 128, b: 128, a: 1 },
+        colorTimeFillB: { r: 255, g: 128, b: 128, a: 0.25 },
+        colorTimeLineW: { r: 128, g: 128, b: 255, a: 1 },
+        colorTimeFillW: { r: 128, g: 128, b: 255, a: 0.25 },
     },
     aqua: {
         colorBackground: { r: 0, g: 191, b: 255, a: 1 },
@@ -76,6 +84,10 @@ const colorSet: { [c: string]: Partial<SvgScoreGraphProp> | undefined } = {
         colorPlayer1: { r: 255, g: 0, b: 0, a: 1 },
         colorPlayer2: { r: 0, g: 0, b: 255, a: 1 },
         colorCap: { r: 0, g: 0, b: 0, a: 1 },
+        colorTimeLineB: { r: 255, g: 128, b: 128, a: 1 },
+        colorTimeFillB: { r: 255, g: 128, b: 128, a: 0.25 },
+        colorTimeLineW: { r: 128, g: 128, b: 255, a: 1 },
+        colorTimeFillW: { r: 128, g: 128, b: 255, a: 0.25 },
     },
 };
 
@@ -391,6 +403,8 @@ class GameBoard {
                     fSizeRh: 3.5 * graphScale,
                     fSizeBw: 4 * graphScale,
                     fSizeBh: 5.5 * graphScale,
+                    fSizeTw: 4 * graphScale,
+                    fSizeTh: 4 * graphScale,
                     fSizeCap:
                         graphWidth / Math.max(this.gameObj.gameId.length, 64),
                     score: player.kifu.moves.map((v) =>

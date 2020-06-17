@@ -116,6 +116,8 @@ export interface SvgScoreGraphProp {
     fSizeRh: number;
     fSizeBw: number;
     fSizeBh: number;
+    fSizeTw: number;
+    fSizeTh: number;
     fSizeCap: number;
     plotYAxisType: YAxis;
     gridYAxisType: YScale;
@@ -760,6 +762,8 @@ function writeSvg<GElement extends Element>(
         fSizeRh,
         fSizeBw,
         fSizeBh,
+        fSizeTw,
+        fSizeTh,
         fSizeCap,
         plotYAxisType,
         gridYAxisType,
@@ -929,7 +933,7 @@ function writeSvg<GElement extends Element>(
             f: gryphFamilyInconsolata,
             w: 0.45,
             p:
-                "M-.012.01q-.023 0-.041-.016-.018-.017-.018-.04 0-.024.018-.041t.041-.017q.023 0 .041.017.019.017.019.04 0 .024-.018.04-.018.018-.042.018zm0 .32q-.025 0-.042-.016Q-.071.297-.071.273t.018-.041q.018-.017.041-.017.023 0 .041.017.019.017.019.04 0 .024-.018.04Q.013.33-.012.33z",
+                "M-.012-.09q-.023 0-.041-.016-.018-.017-.018-.04 0-.024.018-.041t.041-.017q.023 0 .041.017.019.017.019.04 0 .024-.018.04-.018.018-.042.018zm0 .32q-.025 0-.042-.016Q-.071.197-.071.173t.018-.041q.018-.017.041-.017.023 0 .041.017.019.017.019.04 0 .024-.018.04Q.013.23-.012.23z",
         },
         // "Infinity" symbol gryph import from "DejaVu Sans" font and modify full-width
         // https://dejavu-fonts.github.io/
@@ -1577,12 +1581,12 @@ function writeSvg<GElement extends Element>(
             );
             _use.setAttribute(
                 "transform",
-                `matrix(${fix(fSizeLw)} 0 0 ${fix(fSizeLh)} ${fix(
-                    fSizeLw *
+                `matrix(${fix(fSizeTw)} 0 0 ${fix(fSizeTh)} ${fix(
+                    fSizeTw *
                         (strPxWidth(remainTimeB.substring(0, i)) +
-                            strPxWidth(c) / 2 +
-                            1)
-                )} ${fix(-hheight + fSizeLh)})`
+                            strPxWidth(c) / 2) +
+                        1
+                )} ${fix(-hheight * 0.917 + fSizeTh * 0.04)})`
             );
             _g.appendChild(_use);
         });
@@ -1600,12 +1604,12 @@ function writeSvg<GElement extends Element>(
             );
             _use.setAttribute(
                 "transform",
-                `matrix(${fix(fSizeLw)} 0 0 ${fix(fSizeLh)} ${fix(
-                    fSizeLw *
+                `matrix(${fix(fSizeTw)} 0 0 ${fix(fSizeTh)} ${fix(
+                    fSizeTw *
                         (strPxWidth(remainTimeW.substring(0, i)) +
-                            strPxWidth(c) / 2 +
-                            1)
-                )} ${fix(hheight - fSizeLh)})`
+                            strPxWidth(c) / 2) +
+                        1
+                )} ${fix(hheight * 0.917 + fSizeTh * 0.04)})`
             );
             _g.appendChild(_use);
         });
@@ -1670,6 +1674,8 @@ export function doWrite<GElement extends Element>(
                 fSizeRh: 3.5,
                 fSizeBw: 4,
                 fSizeBh: 5.5,
+                fSizeTw: 4,
+                fSizeTh: 4,
                 fSizeCap: 4,
                 plotYAxisType: YAxis.PseudoSigmoid,
                 gridYAxisType: YScale.Score,
