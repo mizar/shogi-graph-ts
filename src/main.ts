@@ -35,7 +35,6 @@ declare const gameBoardProp: {
 };
 
 declare const KifuForJS: {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     loadString: (
         kifu: string,
         id?: string
@@ -154,20 +153,20 @@ class GameBoard {
         | undefined;
     constructor(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        graphDiv: Selection<HTMLDivElement, any, HTMLElement, any>
+        boardSetDiv: Selection<HTMLDivElement, any, HTMLElement, any>
     ) {
         this.uniqid =
             new Date().valueOf().toString(36) +
             Math.floor(Math.random() * 4503599627370496).toString(36);
-        this.graphDiv = graphDiv;
-        this.navDiv = graphDiv.append("div").attr("class", "nav");
-        this.svgDiv = graphDiv.append("div").attr("class", "svggraph");
-        this.sfenDiv = graphDiv.append("div").attr("class", "sfen");
-        this.boardDiv = graphDiv
+        this.graphDiv = boardSetDiv;
+        this.navDiv = boardSetDiv.append("div").attr("class", "nav");
+        this.svgDiv = boardSetDiv.append("div").attr("class", "svggraph");
+        this.sfenDiv = boardSetDiv.append("div").attr("class", "sfen");
+        this.boardDiv = boardSetDiv
             .append("div")
             .attr("class", "board")
             .attr("id", this.uniqid);
-        this.kifDiv = graphDiv.append("div").attr("class", "kif");
+        this.kifDiv = boardSetDiv.append("div").attr("class", "kif");
     }
     async fetchGame(force: boolean): Promise<void> {
         if (!this.gameObj) {
@@ -620,9 +619,9 @@ if (gameBoardProp.multiView) {
         iconSet(reloadButton, refreshSvg);
 
         let boards: GameBoard[] = [];
-        const boardsOuter = body
+        const boardsSetGroupDiv = body
             .append("div")
-            .attr("class", "scoregraph-container");
+            .attr("class", "boardset-container");
 
         const listLoad = async (): Promise<void> => {
             const logPromise = await fetch(gameBoardProp.urlList);
@@ -698,14 +697,14 @@ if (gameBoardProp.multiView) {
                     (g) => !boards.some((b) => b.gameObj?.gameId === g.gameId)
                 )
                 .forEach((g) => {
-                    const obj = new GameBoard(
-                        boardsOuter
+                    const boardSetDiv = new GameBoard(
+                        boardsSetGroupDiv
                             .insert("div", ":first-child")
-                            .attr("class", "scoregraph")
+                            .attr("class", "boardset")
                     );
-                    obj.gameObj = g;
-                    obj.fetchGame(true);
-                    boards.push(obj);
+                    boardSetDiv.gameObj = g;
+                    boardSetDiv.fetchGame(true);
+                    boards.push(boardSetDiv);
                 });
         };
         reloadButton.on("click", () => {
@@ -766,8 +765,8 @@ if (gameBoardProp.multiView) {
             .attr("title", "棋譜リストの再読み込み");
         iconSet(reloadButton, refreshSvg);
 
-        const graphdiv = body.append("div").attr("class", "scoregraph");
-        const boardPart = new GameBoard(graphdiv);
+        const boardSetDiv = body.append("div").attr("class", "boardset");
+        const boardPart = new GameBoard(boardSetDiv);
         boardPart.color = select("body")
             .select("#selectcolor")
             .property("value");
