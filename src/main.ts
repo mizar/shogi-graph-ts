@@ -36,7 +36,10 @@ declare const gameBoardProp: {
 
 declare const KifuForJS: {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    loadString: (kifu: string, id?: string) => Promise<any>;
+    loadString: (
+        kifu: string,
+        id?: string
+    ) => Promise<{ loadKifuSync(kifu: string, fileName?: string): void }>;
 };
 
 const colorSet: { [c: string]: Partial<SvgScoreGraphProp> | undefined } = {
@@ -110,7 +113,8 @@ function getGameIdHash(): string {
 }
 
 function iconSet<G extends BaseType>(
-    button: Selection<G, unknown, HTMLElement, unknown>,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    button: Selection<G, any, HTMLElement, any>,
     src: string
 ): void {
     button
@@ -126,7 +130,17 @@ function iconSet<G extends BaseType>(
 
 class GameBoard {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    graphDiv: Selection<HTMLDivElement, unknown, HTMLElement, any>;
+    graphDiv: Selection<HTMLDivElement, any, HTMLElement, any>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    navDiv: Selection<HTMLDivElement, any, HTMLElement, any>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    svgDiv: Selection<HTMLDivElement, any, HTMLElement, any>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    sfenDiv: Selection<HTMLDivElement, any, HTMLElement, any>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    boardDiv: Selection<HTMLDivElement, any, HTMLElement, any>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    kifDiv: Selection<HTMLDivElement, any, HTMLElement, any>;
     gameObj: GameObj | undefined;
     color = "";
     yaxis = "";
@@ -135,16 +149,25 @@ class GameBoard {
     _lastCsa = "";
     enabled = true;
     uniqid = "";
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    kifuStore: Promise<any> | undefined;
+    kifuStore:
+        | Promise<{ loadKifuSync(kifu: string, fileName?: string): void }>
+        | undefined;
     constructor(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        graphDiv: Selection<HTMLDivElement, unknown, HTMLElement, any>
+        graphDiv: Selection<HTMLDivElement, any, HTMLElement, any>
     ) {
-        this.graphDiv = graphDiv;
         this.uniqid =
             new Date().valueOf().toString(36) +
             Math.floor(Math.random() * 4503599627370496).toString(36);
+        this.graphDiv = graphDiv;
+        this.navDiv = graphDiv.append("div").attr("class", "nav");
+        this.svgDiv = graphDiv.append("div").attr("class", "svggraph");
+        this.sfenDiv = graphDiv.append("div").attr("class", "sfen");
+        this.boardDiv = graphDiv
+            .append("div")
+            .attr("class", "board")
+            .attr("id", this.uniqid);
+        this.kifDiv = graphDiv.append("div").attr("class", "kif");
     }
     async fetchGame(force: boolean): Promise<void> {
         if (!this.gameObj) {
@@ -186,25 +209,25 @@ class GameBoard {
             }
             return;
         }
-        //
+
+        // 現盤面の表示手数取得
         const lastPly = this.graphDiv
             .select<HTMLSelectElement>("select.kifulist")
             .node()?.value;
         const lastMaxPly = this.graphDiv
             .select<HTMLOptionElement>("select.kifulist option:last-child")
             .node()?.value;
-        //
-        this.graphDiv.selectAll("*").remove();
-        //
-        const navDiv = this.graphDiv.append("div").attr("class", "nav");
-        const copyButton = navDiv
+
+        // ナビゲーションバー
+        this.navDiv.selectAll("*").remove();
+        const copyButton = this.navDiv
             .append("button")
             .attr("title", "現在表示中の棋譜をクリップボードにコピー")
             .on("click", () => {
                 navigator.clipboard.writeText(csa);
             });
         iconSet(copyButton, copySvg);
-        const saveButton = navDiv
+        const saveButton = this.navDiv
             .append("button")
             .attr("title", "形勢グラフをクリップボードにコピー(Chromeのみ対応)")
             .on("click", () => {
@@ -257,14 +280,14 @@ class GameBoard {
                 }
             });
         iconSet(saveButton, saveSvg);
-        const redoButton = navDiv
+        const redoButton = this.navDiv
             .append("button")
             .attr("title", "現在表示中の棋譜を再読み込み")
             .on("click", () => {
                 this.fetchGame(true);
             });
         iconSet(redoButton, rotateSvg);
-        navDiv
+        this.navDiv
             .append("span")
             .attr("class", "navText")
             .text(this.gameObj.gameName);
@@ -342,8 +365,9 @@ class GameBoard {
             (v, i) => i > 1 && i % 2 === 0 && v !== ""
         );
 
-        const _svgdiv = document.createElement("div");
-        _svgdiv.setAttribute("class", "svggraph");
+        // 形勢グラフ
+        this.svgDiv.selectAll("*").remove();
+        const _svgdiv = this.svgDiv.node() as HTMLDivElement;
         doWrite(
             _svgdiv,
             Object.assign<
@@ -430,10 +454,11 @@ class GameBoard {
                 yaxisSet[this.yaxis]
             )
         );
-        this.graphDiv.node()?.appendChild(_svgdiv);
+
+        // sfen局面
         if (gameBoardProp.sfenVisible) {
-            const sfeninput = this.graphDiv
-                .append("div")
+            this.sfenDiv.selectAll("*").remove();
+            const sfeninput = this.sfenDiv
                 .append("input")
                 .attr("type", "text")
                 .attr("size", "90")
@@ -454,13 +479,17 @@ class GameBoard {
                     sfeninput.node()?.select();
                 });
         }
-        const boarddiv = this.graphDiv
-            .append("div")
-            .attr("class", "kifuforjs")
-            .attr("id", this.uniqid);
+
+        // 盤面
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        KifuForJS.loadString(csa, this.uniqid);
-        boarddiv
+        if (this.kifuStore) {
+            this.kifuStore.then((res) => {
+                res.loadKifuSync(csa);
+            });
+        } else {
+            this.kifuStore = KifuForJS.loadString(csa, this.uniqid);
+        }
+        this.boardDiv
             .select<HTMLButtonElement>("button[class=dl]")
             .attr("disabled", false)
             .property("disabled", false)
@@ -471,12 +500,12 @@ class GameBoard {
             (this._lastGame && this._lastGame.gameId !== this.gameObj.gameId) ||
             lastPly === lastMaxPly
         ) {
-            boarddiv
+            this.boardDiv
                 .select<HTMLButtonElement>("button[data-go=Infinity]")
                 .node()
                 ?.click();
         } else {
-            boarddiv
+            this.boardDiv
                 .select<HTMLSelectElement>("select.kifulist")
                 .property("value", lastPly)
                 .dispatch("change", {
@@ -485,26 +514,13 @@ class GameBoard {
                     detail: {},
                 });
         }
+
+        // 棋譜テキスト
         if (gameBoardProp.kifuVisible) {
-            const par = this.graphDiv.append("p").attr("class", "kifu");
-            if (player.kifu.header["棋戦"]) {
-                par.append("span").text(
-                    `$EVENT: ${player.kifu.header["棋戦"]}`
-                );
-                par.append("br");
-            }
-            if (player.kifu.header["開始日時"]) {
-                par.append("span").text(
-                    `$START_TIME: ${player.kifu.header["開始日時"]}`
-                );
-                par.append("br");
-            }
-            if (player.kifu.header["先手"]) {
-                par.append("span").text(`☗${player.kifu.header["先手"]}`);
-                par.append("br");
-            }
-            if (player.kifu.header["後手"]) {
-                par.append("span").text(`☖${player.kifu.header["後手"]}`);
+            this.kifDiv.selectAll("*").remove();
+            const par = this.kifDiv.append("p");
+            for (const hentry of Object.entries(player.kifu.header)) {
+                par.append("span").text(`${hentry[0]}：${hentry[1]}`);
                 par.append("br");
             }
             player.kifu.moves.forEach((v, i) => {
@@ -513,23 +529,34 @@ class GameBoard {
                         .attr("style", "white-space:nowrap")
                         .attr(
                             "title",
-                            (v.time
-                                ? [
-                                      `${timeFmt(v.time.now)} / 累計 ${timeFmt(
-                                          v.time.total
-                                      )} / 残り ${remainTimeStr(i, v.time)}`,
-                                  ]
-                                : []
-                            )
-                                .concat(v.comments ?? [])
+                            [`${i}${JKFPlayer.moveToReadableKifu(v)}`]
+                                .concat(
+                                    v.time
+                                        ? [
+                                              `${timeFmt(
+                                                  v.time.now
+                                              )} / 累計 ${timeFmt(
+                                                  v.time.total
+                                              )} / 残り ${remainTimeStr(
+                                                  i,
+                                                  v.time
+                                              )}`,
+                                          ]
+                                        : [],
+                                    v.comments ?? []
+                                )
                                 .join("\n")
                         )
-                        .text(`${i}${JKFPlayer.moveToReadableKifu(v)}`);
+                        .text(
+                            JKFPlayer.moveToReadableKifu(v)
+                                .replace("☗", "▲")
+                                .replace("☖", "△")
+                        );
                     par.append("span").text(" ");
                     if (
                         v.comments?.some((str) => str.startsWith("$END_TIME:"))
                     ) {
-                        this.graphDiv
+                        this.kifDiv
                             .append("pre")
                             .attr("class", "reason")
                             .text(v.comments?.join("\n"));
@@ -542,7 +569,7 @@ class GameBoard {
                 v.comments?.some((str) => str.startsWith("$END_TIME:"))
             )
         ) {
-            boarddiv.select("select.autoload").property("value", "30");
+            this.boardDiv.select("select.autoload").property("value", "30");
             setTimeout(() => {
                 this.fetchGame(false);
             }, 10000);
