@@ -68,7 +68,17 @@ var gameBoardProp = {
                     ) || { 1: "" })[1]
             )
             .filter((s) => s)
-            .map((s) => ({ gameId: s, gameName: "☗" + s.split("+")[2] + " ☖" + s.split("+")[3] + " : " + s.split("+")[4] })),
+            .map((s) => ({
+                gameId: s,
+                gameName: [
+                    "☗",
+                    s.split("+")[2],
+                    " ☖",
+                    s.split("+")[3],
+                    " : ",
+                    s.split("+")[4],
+                ].join(""),
+            })),
 };
 </script>
 <script type="text/javascript" src="./kifu-for-js-2.0.0.min.js"></script>

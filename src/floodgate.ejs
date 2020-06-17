@@ -63,11 +63,17 @@ var gameBoardProp = {
                     ) || { 1: "" })[1]
             )
             .filter((s) => s)
-            .map((s) =>
-                s.startsWith("wdoor+floodgate-300-10F+")
-                    ? { gameId: s, gameName: s.substring(24) }
-                    : { gameId: s, gameName: s }
-            ),
+            .map((s) => ({
+                gameId: s,
+                gameName: [
+                    "☗",
+                    s.split("+")[2],
+                    " ☖",
+                    s.split("+")[3],
+                    " : ",
+                    s.split("+")[4],
+                ].join(""),
+            })),
     sfenVisible: true,
     kifuVisible: true,
 };
