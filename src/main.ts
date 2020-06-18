@@ -583,6 +583,8 @@ class GameBoard {
             setTimeout(() => {
                 this.fetchGame(false);
             }, 10000);
+        } else {
+            this.boardDiv.select("select.autoload").property("value", "NaN");
         }
         this._lastFetch = Date.now();
         this._lastGame = this.gameObj;
