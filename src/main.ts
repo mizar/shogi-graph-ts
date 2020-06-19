@@ -27,12 +27,15 @@ declare const gameBoardProp: {
     multiView?: boolean;
     multiViewSpan?: number;
     url: (gameid: string) => string;
-    urlOrg: (gameid: string) => string;
     urlList: string;
     logParser: (log: string) => GameObj[];
     sfenVisible?: boolean;
     kifuVisible?: boolean;
-    graphHScale?: number;
+    svgPropFn?: (args: {
+        movesLength: number;
+        lastIsSpecial: boolean;
+        gameId: string;
+    }) => Partial<SvgScoreGraphProp>;
 };
 
 declare const KifuForJS: {
@@ -41,6 +44,7 @@ declare const KifuForJS: {
 };
 
 const colorSet: { [c: string]: Partial<SvgScoreGraphProp> | undefined } = {
+    default: {},
     white: {
         colorBackground: { r: 255, g: 255, b: 255, a: 1 },
         colorGridNml: { r: 170, g: 170, b: 170, a: 1 },
@@ -92,6 +96,7 @@ const colorSet: { [c: string]: Partial<SvgScoreGraphProp> | undefined } = {
 };
 
 const yaxisSet: { [c: string]: Partial<SvgScoreGraphProp> | undefined } = {
+    default: {},
     pseudoSigmoid: {
         plotYAxisType: YAxis.PseudoSigmoid,
     },
@@ -194,7 +199,6 @@ class GameBoard {
             this._lastCsa = "";
         }
         const url = gameBoardProp.url(this.gameObj.gameId);
-        const urlOrg = gameBoardProp.urlOrg(this.gameObj.gameId);
         const csaPromise = await fetch(url);
         const csa = await csaPromise.text();
         const player = JKFPlayer.parseCSA(csa);
@@ -360,8 +364,6 @@ class GameBoard {
                     : 0),
             50
         );
-        const graphScale = graphWidth / 256;
-        const graphHScale = (gameBoardProp.graphHScale ?? 1) * graphScale;
 
         const remainTimes = player.kifu.moves.map((v, i) =>
             v.time ? remainTimeStr(i, v.time) : ""
@@ -380,33 +382,29 @@ class GameBoard {
             _svgdiv,
             Object.assign<
                 Partial<SvgScoreGraphProp>,
-                Partial<SvgScoreGraphProp> | undefined,
-                Partial<SvgScoreGraphProp> | undefined
+                Partial<SvgScoreGraphProp>
             >(
+                Object.assign<
+                    Partial<SvgScoreGraphProp>,
+                    Partial<SvgScoreGraphProp>,
+                    Partial<SvgScoreGraphProp> | undefined,
+                    Partial<SvgScoreGraphProp> | undefined
+                >(
+                    {
+                        width: graphWidth,
+                        maxPly,
+                    },
+                    (gameBoardProp.svgPropFn ?? (() => ({})))({
+                        movesLength: player.kifu.moves.length,
+                        lastIsSpecial: !!player.kifu.moves[
+                            player.kifu.moves.length - 1
+                        ].special,
+                        gameId: this.gameObj.gameId,
+                    }),
+                    colorSet[this.color],
+                    yaxisSet[this.yaxis]
+                ),
                 {
-                    maxPly,
-                    width: graphWidth,
-                    height: 48 * graphHScale,
-                    pad: graphScale,
-                    capPad: 1.5 * graphScale,
-                    lWidthNml: 0.06 * graphScale,
-                    lWidthBld: 0.18 * graphScale,
-                    lWidthBorder: 0.24 * graphScale,
-                    lWidthScore: 0.24 * graphScale,
-                    lWidthTime: 0.12 * graphScale,
-                    scaleLength: 1.5 * graphScale,
-                    scalePad: 2 * graphScale,
-                    cRadiusScore: 0.8 * Math.min(graphScale * 2, 1),
-                    fSizeLw: 4 * graphScale,
-                    fSizeLh: 5.25 * graphScale,
-                    fSizeRw: 4 * graphScale,
-                    fSizeRh: 3.5 * graphScale,
-                    fSizeBw: 4 * graphScale,
-                    fSizeBh: 5.5 * graphScale,
-                    fSizeTw: 4 * graphScale,
-                    fSizeTh: 4 * graphScale,
-                    fSizeCap:
-                        graphWidth / Math.max(this.gameObj.gameId.length, 64),
                     score: player.kifu.moves.map((v) =>
                         v.comments
                             ? v.comments.reduce((p, c) => {
@@ -447,8 +445,6 @@ class GameBoard {
                         remainTimesW.length > 0
                             ? remainTimesW[remainTimesW.length - 1]
                             : "",
-                    caption: this.gameObj.gameId,
-                    capLink: urlOrg,
                     plyCallback: (ply: number): void => {
                         this.graphDiv
                             .select(`select.kifulist`)
@@ -459,9 +455,7 @@ class GameBoard {
                                 detail: {},
                             });
                     },
-                },
-                colorSet[this.color],
-                yaxisSet[this.yaxis]
+                }
             )
         );
 
@@ -596,15 +590,17 @@ if (gameBoardProp.multiView) {
     window.addEventListener("load", () => {
         const body = select("body");
         const selectColor = body.append("select").attr("id", "selectcolor");
+        selectColor.append("option").attr("value", "default").text("default");
         selectColor.append("option").attr("value", "white").text("white");
         selectColor.append("option").attr("value", "black").text("black");
         selectColor.append("option").attr("value", "aqua").text("aqua");
         const selectYAxis = body.append("select").attr("id", "selectyaxis");
+        selectYAxis.attr(
+            "title",
+            "{\n  'pSigmoid': (score) => Math.asin(Math.atan(score * ((Math.PI * Math.PI) / 4800)) * (2 / Math.PI)) * (2 / Math.PI),\n  'atan': (score) => Math.atan(score * (Math.PI / 2400)) * (2 / Math.PI),\n  'tanh': (score) => Math.tanh(score / 1200),\n  'linear1000': (score) => Math.min(Math.max(score / 1000, -1), +1),\n  'linear1200': (score) => Math.min(Math.max(score / 1200, -1), +1),\n  'linear2000': (score) => Math.min(Math.max(score / 2000, -1), +1),\n  'linear3000': (score) => Math.min(Math.max(score / 3000, -1), +1),\n}"
+        );
+        selectYAxis.append("option").attr("value", "default").text("default");
         selectYAxis
-            .attr(
-                "title",
-                "{\n  'pSigmoid': (score) => Math.asin(Math.atan(score * ((Math.PI * Math.PI) / 4800)) * (2 / Math.PI)) * (2 / Math.PI),\n  'atan': (score) => Math.atan(score * (Math.PI / 2400)) * (2 / Math.PI),\n  'tanh': (score) => Math.tanh(score / 1200),\n  'linear1000': (score) => Math.min(Math.max(score / 1000, -1), +1),\n  'linear1200': (score) => Math.min(Math.max(score / 1200, -1), +1),\n  'linear2000': (score) => Math.min(Math.max(score / 2000, -1), +1),\n  'linear3000': (score) => Math.min(Math.max(score / 3000, -1), +1),\n}"
-            )
             .append("option")
             .attr("value", "pseudoSigmoid")
             .text("pSigmoid");
@@ -612,12 +608,12 @@ if (gameBoardProp.multiView) {
         selectYAxis.append("option").attr("value", "tanh").text("tanh");
         selectYAxis
             .append("option")
-            .attr("value", "linear1000")
-            .text("linear1000");
-        selectYAxis
-            .append("option")
             .attr("value", "linear1200")
             .text("linear1200");
+        selectYAxis
+            .append("option")
+            .attr("value", "linear1000")
+            .text("linear1000");
         selectYAxis
             .append("option")
             .attr("value", "linear2000")
@@ -743,15 +739,17 @@ if (gameBoardProp.multiView) {
         const body = select("body");
         const selectGame = body.append("select").attr("id", "selectgame");
         const selectColor = body.append("select").attr("id", "selectcolor");
+        selectColor.append("option").attr("value", "default").text("default");
         selectColor.append("option").attr("value", "white").text("white");
         selectColor.append("option").attr("value", "black").text("black");
         selectColor.append("option").attr("value", "aqua").text("aqua");
         const selectYAxis = body.append("select").attr("id", "selectyaxis");
+        selectYAxis.attr(
+            "title",
+            "{\n  'pSigmoid': (score) => Math.asin(Math.atan(score * ((Math.PI * Math.PI) / 4800)) * (2 / Math.PI)) * (2 / Math.PI),\n  'atan': (score) => Math.atan(score * (Math.PI / 2400)) * (2 / Math.PI),\n  'tanh': (score) => Math.tanh(score / 1200),\n  'linear1000': (score) => Math.min(Math.max(score / 1000, -1), +1),\n  'linear1200': (score) => Math.min(Math.max(score / 1200, -1), +1),\n  'linear2000': (score) => Math.min(Math.max(score / 2000, -1), +1),\n  'linear3000': (score) => Math.min(Math.max(score / 3000, -1), +1),\n}"
+        );
+        selectYAxis.append("option").attr("value", "default").text("default");
         selectYAxis
-            .attr(
-                "title",
-                "{\n  'pSigmoid': (score) => Math.asin(Math.atan(score * ((Math.PI * Math.PI) / 4800)) * (2 / Math.PI)) * (2 / Math.PI),\n  'atan': (score) => Math.atan(score * (Math.PI / 2400)) * (2 / Math.PI),\n  'tanh': (score) => Math.tanh(score / 1200),\n  'linear1000': (score) => Math.min(Math.max(score / 1000, -1), +1),\n  'linear1200': (score) => Math.min(Math.max(score / 1200, -1), +1),\n  'linear2000': (score) => Math.min(Math.max(score / 2000, -1), +1),\n  'linear3000': (score) => Math.min(Math.max(score / 3000, -1), +1),\n}"
-            )
             .append("option")
             .attr("value", "pseudoSigmoid")
             .text("pSigmoid");
@@ -759,12 +757,12 @@ if (gameBoardProp.multiView) {
         selectYAxis.append("option").attr("value", "tanh").text("tanh");
         selectYAxis
             .append("option")
-            .attr("value", "linear1000")
-            .text("linear1000");
-        selectYAxis
-            .append("option")
             .attr("value", "linear1200")
             .text("linear1200");
+        selectYAxis
+            .append("option")
+            .attr("value", "linear1000")
+            .text("linear1000");
         selectYAxis
             .append("option")
             .attr("value", "linear2000")

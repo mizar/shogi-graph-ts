@@ -3,6 +3,9 @@
  * Copyright (c) Mizar <https://github.com/mizar>
  */
 
+/**
+ * 縦軸目盛タイプ
+ */
 export const YAxis = {
     PseudoSigmoid: 0 as const,
     Tanh: 1 as const,
@@ -12,6 +15,10 @@ export const YAxis = {
     Linear3000: 5 as const,
     Atan: 6 as const,
 };
+
+/**
+ * 縦軸目盛タイプ
+ */
 export type YAxis = typeof YAxis[keyof typeof YAxis];
 
 // y軸プロット用関数の選択
@@ -82,6 +89,60 @@ interface Rgba {
     b: number;
     a: number;
 }
+
+/**
+ * SVG形勢グラフの描画パラメータ群
+ * @param maxPly 最後の目盛を振る手数
+ * @param width グラフ本体の横幅（手数ベース, maxPly <= width）
+ * @param height グラフ本体の高さ
+ * @param pad グラフ周囲の余白幅
+ * @param capPad グラフとキャプション文字列との余白幅
+ * @param lWidthNml グラフ罫線幅（細）
+ * @param lWidthBld グラフ罫線幅（太）
+ * @param lWidthBorder グラフ罫線幅（枠）
+ * @param lWidthScore グラフ線幅（評価値）
+ * @param lWidthTime グラフ線幅（持ち時間）
+ * @param scaleLength 目盛線長さ
+ * @param scalePad 目盛線と目盛文字列との余白幅
+ * @param cRadiusScore 評価値点の円半径
+ * @param colorBackground 背景色
+ * @param colorGridNml 罫線色（細）
+ * @param colorGridBld 罫線色（太）
+ * @param colorGridEBld 罫線色（極太）
+ * @param colorGridBorder 罫線色（枠）
+ * @param colorPly 色（手数）
+ * @param colorPlayer0 色（互角）
+ * @param colorPlayer1 色（先手）
+ * @param colorPlayer2 色（後手）
+ * @param colorCap 色（キャプション文字列）
+ * @param colorTimeLineB 線色（先手持ち時間）
+ * @param colorTimeLineW 線色（後手持ち時間）
+ * @param colorTimeFillB 面色（先手持ち時間）
+ * @param colorTimeFillW 面色（後手持ち時間）
+ * @param fPosTime1 文字位置ベース（0: グラフ中央, 1: グラフ上下端）
+ * @param fPosTime2 文字位置補正量（文字サイズに対する上下位置補正乗算値）
+ * @param fSizeLw 文字横サイズ（左目盛）
+ * @param fSizeLh 文字縦サイズ（左目盛）
+ * @param fSizeRw 文字横サイズ（右目盛）
+ * @param fSizeRh 文字縦サイズ（右目盛）
+ * @param fSizeBw 文字横サイズ（下目盛）
+ * @param fSizeBh 文字縦サイズ（下目盛）
+ * @param fSizeTw 文字横サイズ（持ち時間）
+ * @param fSizeTh 文字縦サイズ（持ち時間）
+ * @param fSizeCap 文字サイズ（キャプション）
+ * @param lType 目盛タイプ（左）
+ * @param rType 目盛タイプ（右）
+ * @param tType 目盛タイプ（上）
+ * @param bType 目盛タイプ（下）
+ * @param score 評価値
+ * @param comment コメント
+ * @param timePar 残り持ち時間割合（0: 残り持ち時間無し ～ 1:持ち時間初期値）
+ * @param remainTimeB 先手持ち時間文字列
+ * @param remainTimeW 後手持ち時間文字列
+ * @param caption キャプション文字列
+ * @param capLink キャプションリンク先URL
+ * @param plyCallback 目盛点クリックイベント発生時のコールバック関数
+ */
 export interface SvgScoreGraphProp {
     maxPly: number;
     width: number;
@@ -110,6 +171,8 @@ export interface SvgScoreGraphProp {
     colorTimeFillB: Rgba;
     colorTimeLineW: Rgba;
     colorTimeFillW: Rgba;
+    fPosTime1: number;
+    fPosTime2: number;
     fSizeLw: number;
     fSizeLh: number;
     fSizeRw: number;
@@ -756,6 +819,8 @@ function writeSvg<GElement extends Element>(
         colorTimeFillB,
         colorTimeLineW,
         colorTimeFillW,
+        fPosTime1,
+        fPosTime2,
         fSizeLw,
         fSizeLh,
         fSizeRw,
@@ -1586,7 +1651,7 @@ function writeSvg<GElement extends Element>(
                         (strPxWidth(remainTimeB.substring(0, i)) +
                             strPxWidth(c) / 2) +
                         1
-                )} ${fix(-hheight * 0.917 + fSizeTh * 0.04)})`
+                )} ${fix(-hheight * fPosTime1 + fSizeTh * fPosTime2)})`
             );
             _g.appendChild(_use);
         });
@@ -1609,7 +1674,7 @@ function writeSvg<GElement extends Element>(
                         (strPxWidth(remainTimeW.substring(0, i)) +
                             strPxWidth(c) / 2) +
                         1
-                )} ${fix(hheight * 0.917 + fSizeTh * 0.04)})`
+                )} ${fix(hheight * fPosTime1 + fSizeTh * fPosTime2)})`
             );
             _g.appendChild(_use);
         });
@@ -1668,6 +1733,8 @@ export function doWrite<GElement extends Element>(
                 colorTimeFillB: { r: 255, g: 128, b: 128, a: 0.25 },
                 colorTimeLineW: { r: 128, g: 128, b: 255, a: 1 },
                 colorTimeFillW: { r: 128, g: 128, b: 255, a: 0.25 },
+                fPosTime1: 0.917,
+                fPosTime2: 0.04,
                 fSizeLw: 4,
                 fSizeLh: 5.25,
                 fSizeRw: 4,
