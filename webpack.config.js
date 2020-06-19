@@ -29,9 +29,9 @@ module.exports = (env) => ({
         [
             new HtmlWebPackPlugin({
                 title: name,
-                template: "./src/floodgate.ejs",
-                chunks: ["floodgate"],
-                filename: "floodgate.html",
+                template: "./src/floodgate_single.ejs",
+                chunks: ["floodgate_single"],
+                filename: "floodgate_single.html",
             }),
             new HtmlWebPackPlugin({
                 title: name,
@@ -41,9 +41,9 @@ module.exports = (env) => ({
             }),
             new HtmlWebPackPlugin({
                 title: name,
-                template: "./src/denryusen.ejs",
-                chunks: ["denryusen"],
-                filename: "denryusen.html",
+                template: "./src/denryusen_single.ejs",
+                chunks: ["denryusen_single"],
+                filename: "denryusen_single.html",
             }),
             new HtmlWebPackPlugin({
                 title: name,
@@ -53,15 +53,15 @@ module.exports = (env) => ({
             }),
             new HtmlWebPackPlugin({
                 title: name,
-                template: "./src/denryusen_master.ejs",
-                chunks: ["denryusen_master"],
-                filename: "denryusen_master.html",
+                template: "./src/denryusen_single_test.ejs",
+                chunks: ["denryusen_single_test"],
+                filename: "denryusen_single_test.html",
             }),
             new HtmlWebPackPlugin({
                 title: name,
-                template: "./src/denryusen_multi_master.ejs",
-                chunks: ["denryusen_multi_master"],
-                filename: "denryusen_multi_master.html",
+                template: "./src/denryusen_multi_test.ejs",
+                chunks: ["denryusen_multi_test"],
+                filename: "denryusen_multi_test.html",
             }),
         ],
         [
