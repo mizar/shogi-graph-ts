@@ -369,10 +369,10 @@ class GameBoard {
             v.time ? remainTimeStr(i, v.time) : ""
         );
         const remainTimesB = remainTimes.filter(
-            (v, i) => i > 1 && i % 2 === 1 && v !== ""
+            (v, i) => i > 0 && i % 2 === 1 && v !== ""
         );
         const remainTimesW = remainTimes.filter(
-            (v, i) => i > 1 && i % 2 === 0 && v !== ""
+            (v, i) => i > 0 && i % 2 === 0 && v !== ""
         );
 
         // 形勢グラフ
