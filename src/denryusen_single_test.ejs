@@ -7,14 +7,16 @@
 <style>
 .kifuforjs .players .mochi .tebanname { overflow: hidden; }
 .kifuforjs textarea, .kifuforjs textarea:disabled { color: #000; background-color: #fff; -webkit-text-fill-color: #000; opacity: 1; }
-.boardset, .boardset .nav, .boardset svg.boardset, .boardset input.sfen, .boardset p.kifu, .boardset pre.reason { width: 570px; }
+.boardset, .boardset .nav, .boardset svg.boardset, .boardset p.kifu, .boardset pre.reason { width: 570px; }
 </style>
 <script type="text/javascript">
 var denryuUrlBase = "https://mzr.jp/denryusen/dr1_test2";
 var denryuOrgUrlBase = "http://www.golan.sakura.ne.jp/denryusen/dr1_test2";
 var gameBoardProp = {
     url: (gameId) => denryuUrlBase + "/kifufiles/" + gameId + ".csa",
+    urlOrg: (gameId) => denryuOrgUrlBase + "/kifufiles/" + gameId + ".csa",
     urlList: denryuUrlBase + "/kifulist.txt",
+    kifuVisible: true,
     logParser: log =>
         log
             .split("\n")
@@ -30,7 +32,6 @@ var gameBoardProp = {
                     .replace(/▲/g, "☗")
                     .replace(/△/g, "☖"),
             })),
-    kifuVisible: true,
     svgPropFn: (args) => {
         var movesLength = args.movesLength || 256;
         var lastIsSpecial = !!args.lastIsSpecial;

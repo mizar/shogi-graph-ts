@@ -8,10 +8,12 @@ import { JKFPlayer } from "json-kifu-format";
 import { ITimeFormat } from "json-kifu-format/dist/src/Formats";
 import { select, BaseType, Selection } from "d3-selection";
 import copySvg from "tabler-icons/icons/file-text.svg";
-import saveSvg from "tabler-icons/icons/photo.svg";
+import linkSvg from "tabler-icons/icons/link.svg";
+import photoSvg from "tabler-icons/icons/photo.svg";
 import rotateSvg from "tabler-icons/icons/rotate.svg";
 import refreshSvg from "tabler-icons/icons/refresh.svg";
 import KifuStore from "kifu-for-js/bundle/src/stores/KifuStore";
+import url from "url";
 
 interface GameObj {
     gameId: string;
@@ -27,9 +29,9 @@ declare const gameBoardProp: {
     multiView?: boolean;
     multiViewSpan?: number;
     url: (gameid: string) => string;
+    urlOrg?: (gameid: string) => string;
     urlList: string;
     logParser: (log: string) => GameObj[];
-    sfenVisible?: boolean;
     kifuVisible?: boolean;
     svgPropFn?: (args: {
         movesLength: number;
@@ -151,8 +153,6 @@ class GameBoard {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     svgDiv: Selection<HTMLDivElement, any, HTMLElement, any>;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    sfenDiv: Selection<HTMLDivElement, any, HTMLElement, any>;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     boardDiv: Selection<HTMLDivElement, any, HTMLElement, any>;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     kifDiv: Selection<HTMLDivElement, any, HTMLElement, any>;
@@ -175,7 +175,6 @@ class GameBoard {
         this.graphDiv = boardSetDiv;
         this.navDiv = boardSetDiv.append("div").attr("class", "nav");
         this.svgDiv = boardSetDiv.append("div").attr("class", "svggraph");
-        this.sfenDiv = boardSetDiv.append("div").attr("class", "sfen");
         this.boardDiv = boardSetDiv
             .append("div")
             .attr("class", "board")
@@ -198,8 +197,15 @@ class GameBoard {
         if (this._lastGame && this._lastGame.gameId !== this.gameObj.gameId) {
             this._lastCsa = "";
         }
-        const url = gameBoardProp.url(this.gameObj.gameId);
-        const csaPromise = await fetch(url);
+        const urlStr = url.resolve(
+            location.href,
+            gameBoardProp.url(this.gameObj.gameId)
+        );
+        const urlOrgStr = url.resolve(
+            location.href,
+            (gameBoardProp.urlOrg ?? gameBoardProp.url)(this.gameObj.gameId)
+        );
+        const csaPromise = await fetch(urlStr);
         const csa = await csaPromise.text();
         const player = JKFPlayer.parseCSA(csa);
         player.goto(Infinity);
@@ -239,7 +245,14 @@ class GameBoard {
                 navigator.clipboard.writeText(csa);
             });
         iconSet(copyButton, copySvg);
-        const saveButton = this.navDiv
+        const linkButton = this.navDiv
+            .append("button")
+            .attr("title", "棋譜URLをクリップボードにコピー")
+            .on("click", () => {
+                navigator.clipboard.writeText(urlOrgStr);
+            });
+        iconSet(linkButton, linkSvg);
+        const photoButton = this.navDiv
             .append("button")
             .attr("title", "形勢グラフをクリップボードにコピー(Chromeのみ対応)")
             .on("click", () => {
@@ -291,7 +304,7 @@ class GameBoard {
                     image.src = svgUrl;
                 }
             });
-        iconSet(saveButton, saveSvg);
+        iconSet(photoButton, photoSvg);
         const redoButton = this.navDiv
             .append("button")
             .attr("title", "現在表示中の棋譜を再読み込み")
@@ -447,7 +460,7 @@ class GameBoard {
                             : "",
                     plyCallback: (ply: number): void => {
                         this.graphDiv
-                            .select(`select.kifulist`)
+                            .select("select.kifulist")
                             .property("value", `${ply}`)
                             ?.dispatch("change", {
                                 bubbles: true,
@@ -458,31 +471,6 @@ class GameBoard {
                 }
             )
         );
-
-        // sfen局面
-        if (gameBoardProp.sfenVisible) {
-            this.sfenDiv.selectAll("*").remove();
-            const sfeninput = this.sfenDiv
-                .append("input")
-                .attr("type", "text")
-                .attr("size", "90")
-                .attr("maxlength", "160")
-                .attr("readonly", "")
-                .attr("class", "sfen")
-                .property(
-                    "value",
-                    "sfen " +
-                        player.shogi.toSFENString(
-                            player.kifu.moves.length -
-                                (player.kifu.moves.some((e) => e.special)
-                                    ? 1
-                                    : 0)
-                        )
-                )
-                .on("focus", () => {
-                    sfeninput.node()?.select();
-                });
-        }
 
         // 盤面
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -498,7 +486,7 @@ class GameBoard {
             .attr("disabled", false)
             .property("disabled", false)
             .on("click", () => {
-                window.open(url, "_blank");
+                window.open(urlOrgStr, "_blank");
             });
         if (
             (this._lastGame && this._lastGame.gameId !== this.gameObj.gameId) ||
