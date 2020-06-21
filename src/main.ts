@@ -238,73 +238,84 @@ class GameBoard {
 
         // ナビゲーションバー
         this.navDiv.selectAll("*").remove();
-        const copyButton = this.navDiv
-            .append("button")
-            .attr("title", "現在表示中の棋譜をクリップボードにコピー")
-            .on("click", () => {
-                navigator.clipboard.writeText(csa);
-            });
-        iconSet(copyButton, copySvg);
-        const linkButton = this.navDiv
-            .append("button")
-            .attr("title", "棋譜URLをクリップボードにコピー")
-            .on("click", () => {
-                navigator.clipboard.writeText(urlOrgStr);
-            });
-        iconSet(linkButton, linkSvg);
-        const photoButton = this.navDiv
-            .append("button")
-            .attr("title", "形勢グラフをクリップボードにコピー(Chromeのみ対応)")
-            .on("click", () => {
-                const svgArray = this.graphDiv
-                    .select<SVGElement>("svg")
-                    .nodes();
-                if (svgArray.length) {
-                    const svg = svgArray[0];
-                    const svgUrl = `data:image/svg+xml;charset=utf-8;base64,${btoa(
-                        unescape(
-                            encodeURIComponent(
-                                new XMLSerializer().serializeToString(svg)
+        if (navigator.clipboard) {
+            const copyButton = this.navDiv
+                .append("button")
+                .attr("title", "現在表示中の棋譜をクリップボードにコピー")
+                .on("click", () => {
+                    navigator.clipboard.writeText(csa);
+                });
+            iconSet(copyButton, copySvg);
+        }
+        if (navigator.clipboard) {
+            const linkButton = this.navDiv
+                .append("button")
+                .attr("title", "棋譜URLをクリップボードにコピー")
+                .on("click", () => {
+                    navigator.clipboard.writeText(urlOrgStr);
+                });
+            iconSet(linkButton, linkSvg);
+        }
+        if (navigator.clipboard) {
+            const photoButton = this.navDiv
+                .append("button")
+                .attr(
+                    "title",
+                    "形勢グラフをクリップボードにコピー(Chromeのみ対応)"
+                )
+                .on("click", () => {
+                    const svgArray = this.graphDiv
+                        .select<SVGElement>("svg")
+                        .nodes();
+                    if (svgArray.length) {
+                        const svg = svgArray[0];
+                        const svgUrl = `data:image/svg+xml;charset=utf-8;base64,${btoa(
+                            unescape(
+                                encodeURIComponent(
+                                    new XMLSerializer().serializeToString(svg)
+                                )
                             )
-                        )
-                    )}`;
-                    const canvas = document.createElement("canvas");
-                    canvas.height = Math.max(svg.clientHeight, 480);
-                    canvas.width = Math.round(
-                        (canvas.height / svg.clientHeight) * svg.clientWidth
-                    );
-                    const ctx = canvas.getContext("2d");
-                    const image = new Image(canvas.width, canvas.height);
-                    image.onload = (): void => {
-                        ctx?.drawImage(
-                            image,
-                            0,
-                            0,
-                            canvas.width,
-                            canvas.height
+                        )}`;
+                        const canvas = document.createElement("canvas");
+                        canvas.height = Math.max(svg.clientHeight, 480);
+                        canvas.width = Math.round(
+                            (canvas.height / svg.clientHeight) * svg.clientWidth
                         );
-                        if (
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            (global as any).ClipboardItem &&
-                            navigator.clipboard.write
-                        ) {
-                            canvas.toBlob(async (blob) => {
-                                if (blob) {
-                                    await navigator.clipboard.write([
-                                        new ClipboardItem({
-                                            [blob.type]: blob,
-                                        }),
-                                    ]);
-                                }
-                            });
-                        } else {
-                            navigator.clipboard.writeText(canvas.toDataURL());
-                        }
-                    };
-                    image.src = svgUrl;
-                }
-            });
-        iconSet(photoButton, photoSvg);
+                        const ctx = canvas.getContext("2d");
+                        const image = new Image(canvas.width, canvas.height);
+                        image.onload = (): void => {
+                            ctx?.drawImage(
+                                image,
+                                0,
+                                0,
+                                canvas.width,
+                                canvas.height
+                            );
+                            if (
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                (global as any).ClipboardItem &&
+                                navigator.clipboard.write
+                            ) {
+                                canvas.toBlob(async (blob) => {
+                                    if (blob) {
+                                        await navigator.clipboard.write([
+                                            new ClipboardItem({
+                                                [blob.type]: blob,
+                                            }),
+                                        ]);
+                                    }
+                                });
+                            } else {
+                                navigator.clipboard.writeText(
+                                    canvas.toDataURL()
+                                );
+                            }
+                        };
+                        image.src = svgUrl;
+                    }
+                });
+            iconSet(photoButton, photoSvg);
+        }
         const redoButton = this.navDiv
             .append("button")
             .attr("title", "現在表示中の棋譜を再読み込み")
