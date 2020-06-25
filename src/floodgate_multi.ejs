@@ -17,7 +17,7 @@ var gameBoardProp = {
     multiViewSpan: 3540000,
     url: (gameId) =>
         [
-            "https://mzr.jp/wdoor-latest/",
+            "https://p.mzr.jp/wdoor-latest/",
             gameId.substring(
                 gameId.length - 14,
                 gameId.length - 10
@@ -57,7 +57,7 @@ var gameBoardProp = {
             gameId,
             ".csa",
         ].join(""),
-    urlList: "https://mzr.jp/wdoor-latest/shogi-server.log",
+    urlList: "https://p.mzr.jp/wdoor-latest/shogi-server.log",
     logParser: (log) =>
         log
             .split("\n")
