@@ -228,14 +228,6 @@ class GameBoard {
             return;
         }
 
-        // 現盤面の表示手数取得
-        const lastPly = this.graphDiv
-            .select<HTMLSelectElement>("select.kifulist")
-            .node()?.value;
-        const lastMaxPly = this.graphDiv
-            .select<HTMLOptionElement>("select.kifulist option:last-child")
-            .node()?.value;
-
         // ナビゲーションバー
         this.navDiv.selectAll("*").remove();
         if (navigator.clipboard) {
@@ -483,15 +475,39 @@ class GameBoard {
             )
         );
 
-        // 盤面
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         if (this.kifuStore) {
+            // 盤面の更新
+
+            // 現盤面の表示手数取得
+            const lastPly = this.kifuStore.player.tesuu;
+            const lastMaxPly = this.kifuStore.player.kifu.moves.length - 1;
+
             this.kifuStore.loadKifuSync(csa);
+
+            if (
+                lastPly &&
+                lastPly !== lastMaxPly &&
+                this._lastGame &&
+                this.gameObj &&
+                this._lastGame.gameId === this.gameObj.gameId
+            ) {
+                this.kifuStore.player.goto(lastPly);
+            } else {
+                this.kifuStore.player.go(Infinity);
+            }
         } else {
-            KifuForJS.loadString(csa, this.uniqid).then((kifuStore) => {
-                this.kifuStore = kifuStore;
-            });
+            // 盤面の初期読み込み
+            this.kifuStore = await KifuForJS.loadString(csa, this.uniqid);
+            // this.kifuStore.player.go(Infinity);
+
+            // player.go(Infinity) すると何故か処理が非常に重いので代わりに棋譜送りボタンを押す
+            this.boardDiv
+                .select<HTMLButtonElement>("button[data-go=Infinity]")
+                .node()
+                ?.click();
         }
+
+        // 棋譜保存ボタンの有効化＆イベント付与
         this.boardDiv
             .select<HTMLButtonElement>("button[class=dl]")
             .attr("disabled", false)
@@ -499,24 +515,12 @@ class GameBoard {
             .on("click", () => {
                 window.open(urlOrgStr, "_blank");
             });
-        if (
-            (this._lastGame && this._lastGame.gameId !== this.gameObj.gameId) ||
-            lastPly === lastMaxPly
-        ) {
-            this.boardDiv
-                .select<HTMLButtonElement>("button[data-go=Infinity]")
-                .node()
-                ?.click();
-        } else {
-            this.boardDiv
-                .select<HTMLSelectElement>("select.kifulist")
-                .property("value", lastPly)
-                .dispatch("change", {
-                    bubbles: true,
-                    cancelable: false,
-                    detail: {},
-                });
-        }
+
+        // 自動更新間隔セレクタの無効化
+        this.boardDiv
+            .select<HTMLSelectElement>("select.autoload")
+            .attr("disabled", true)
+            .property("disabled", true);
 
         // 棋譜テキスト
         if (gameBoardProp.kifuVisible) {
