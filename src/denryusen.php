@@ -1,14 +1,14 @@
 <html lang="ja" prefix="og: http://ogp.me/ns#">
 <head>
 <meta charset="utf-8"/>
-<meta property="og:title" content="第1回電竜戦 <?php echo htmlspecialchars($_GET[gn]) ?> <?php echo htmlspecialchars($_GET[te]) ?>手目 <?php echo htmlspecialchars($_GET[mv]) ?> まで"/>
+<meta property="og:title" content="第1回電竜戦 <?php echo htmlspecialchars($_GET["gn"]) ?> <?php echo htmlspecialchars($_GET["te"]) ?>手目 <?php echo htmlspecialchars($_GET["mv"]) ?> まで"/>
 <meta property="og:type" content="article"/>
-<meta property="og:description" content="第1回電竜戦 <?php echo htmlspecialchars($_GET[gn]) ?> <?php echo htmlspecialchars($_GET[te]) ?>手目 <?php echo htmlspecialchars($_GET[mv]) ?> まで"/>
-<meta property="og:url" content="https://golan.sakura.ne.jp/denryusen/dr1_test2/dist/denryusen_single#<?php echo urlencode($_GET[gi]) ?>"/>
+<meta property="og:description" content="第1回電竜戦 <?php echo htmlspecialchars($_GET["gn"]) ?> <?php echo htmlspecialchars($_GET["te"]) ?>手目 <?php echo htmlspecialchars($_GET["mv"]) ?> まで"/>
+<meta property="og:url" content="https://golan.sakura.ne.jp/denryusen/dr1_test2/dist/denryusen_single#<?php echo urlencode($_GET["gi"]) ?>"/>
 <meta property="og:site_name" content="第1回電竜戦"/>
-<meta property="og:image" content="https://golan.sakura.ne.jp/denryusen/dr1_test2/shogiban_gd1200.php?csa=<?php echo urlencode($_GET[gi]) ?>.csa&tesuu=<?php echo urlencode($_GET[te]) ?>"/>
+<meta property="og:image" content="https://golan.sakura.ne.jp/denryusen/dr1_test2/shogiban_gd1200.php?csa=<?php echo urlencode($_GET["gi"]) ?>.csa&tesuu=<?php echo urlencode($_GET["te"]) ?>"/>
 <meta name="twitter:card" content="summary_large_image"/>
-<title>第1回電竜戦 <?php echo htmlspecialchars($_GET[gn]) ?></title>
+<title>第1回電竜戦 <?php echo htmlspecialchars($_GET["gn"]) ?></title>
 <style>
 .kifuforjs .players .mochi .tebanname { overflow: hidden; }
 .kifuforjs textarea, .kifuforjs textarea:disabled { color: #000; background-color: #fff; -webkit-text-fill-color: #000; opacity: 1; }
@@ -19,9 +19,9 @@
 <script type="text/javascript">
 var denryuUrlBase = "..";
 var gameBoardProp = {
-    gameId: "<?php echo urlencode($_GET[gi]) ?>",
-    gameName: "<?php echo htmlspecialchars($_GET[gn]) ?>",
-    tesuu: "<?php echo htmlspecialchars($_GET[te]) ?>",
+    gameId: "<?php echo urlencode($_GET["gi"]) ?>",
+    gameName: "<?php echo htmlspecialchars($_GET["gn"]) ?>",
+    tesuu: "<?php echo htmlspecialchars($_GET["te"]) ?>",
     url: (gameId) => denryuUrlBase + "/kifufiles/" + gameId + ".csa",
     urlList: denryuUrlBase + "/kifulist.txt",
     kifuVisible: true,
@@ -105,6 +105,7 @@ var gameBoardProp = {
             location.href
         ).href,
         hashtags: "電竜戦",
+        via: "DenryuSen",
     }),
 };
 </script>

@@ -393,11 +393,21 @@ class GameBoard {
                     window.open(
                         `https://twitter.com/share?text=${encodeURIComponent(
                             tweetProp.text
-                        )}&url=${encodeURIComponent(
-                            tweetProp.url ?? ""
-                        )}&hashtags=${encodeURIComponent(
-                            tweetProp.hashtags ?? ""
-                        )}&via=${encodeURIComponent(tweetProp.via ?? "")}`,
+                        )}${
+                            tweetProp.url
+                                ? `&url=${encodeURIComponent(tweetProp.url)}`
+                                : ""
+                        }${
+                            tweetProp.hashtags
+                                ? `&hashtags=${encodeURIComponent(
+                                      tweetProp.hashtags
+                                  )}`
+                                : ""
+                        }${
+                            tweetProp.via
+                                ? `&via=${encodeURIComponent(tweetProp.via)}`
+                                : ""
+                        }`,
                         "_blank"
                     );
                 });
