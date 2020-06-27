@@ -19,8 +19,12 @@ module.exports = (env) => ({
                 use: "ts-loader",
             },
             {
-                test: /\.(jpe?g|png|gif|svg|ttf|otf)$/i,
+                test: /\.(jpe?g|png|gif|ttf|otf)$/i,
                 loader: "url-loader",
+            },
+            {
+                test: /\.svg$/i,
+                loader: "raw-loader",
             },
         ],
     },
@@ -95,6 +99,11 @@ module.exports = (env) => ({
                         {
                             context: "node_modules/kifu-for-js/bundle",
                             from: "kifu-for-js-*",
+                            to: path.resolve(__dirname, "dist"),
+                        },
+                        {
+                            context: "src",
+                            from: "*\\.php",
                             to: path.resolve(__dirname, "dist"),
                         },
                     ],

@@ -12,6 +12,8 @@ import linkSvg from "tabler-icons/icons/link.svg";
 import photoSvg from "tabler-icons/icons/photo.svg";
 import rotateSvg from "tabler-icons/icons/rotate.svg";
 import refreshSvg from "tabler-icons/icons/refresh.svg";
+import tweetSvg from "tabler-icons/icons/brand-twitter.svg";
+import { mobx } from "kifu-for-js/bundle/src/index";
 import KifuStore from "kifu-for-js/bundle/src/stores/KifuStore";
 import url from "url";
 
@@ -26,7 +28,7 @@ interface TimeMan {
 }
 
 declare const gameBoardProp: {
-    multiView?: boolean;
+    mode?: string;
     multiViewSpan?: number;
     url: (gameid: string) => string;
     urlOrg?: (gameid: string) => string;
@@ -37,12 +39,28 @@ declare const gameBoardProp: {
         movesLength: number;
         lastIsSpecial: boolean;
         gameId: string;
+        tesuu: number;
     }) => Partial<SvgScoreGraphProp>;
+    tweetPropFn?: (args: {
+        gameId: string;
+        gameName: string;
+        tesuu: number;
+        move: string;
+    }) => {
+        text: string;
+        url?: string;
+        hashtags?: string;
+        via?: string;
+    };
+    gameId?: string;
+    gameName?: string;
+    tesuu?: string | number;
 };
 
 declare const KifuForJS: {
     loadString: (kifu: string, id?: string) => Promise<KifuStore>;
     load(filePath: string, id?: string): Promise<KifuStore>;
+    mobx: typeof mobx;
 };
 
 const colorSet: { [c: string]: Partial<SvgScoreGraphProp> | undefined } = {
@@ -134,15 +152,7 @@ function iconSet<G extends BaseType>(
     button: Selection<G, any, HTMLElement, any>,
     src: string
 ): void {
-    button
-        .append("img")
-        .attr("src", src)
-        .attr(
-            "style",
-            "font-size:inherit;width:1em;height:1em;vertical-align:-.125em"
-        )
-        .attr("data-icon-origin", "https://github.com/tabler/tabler-icons")
-        .attr("data-icon-license", "MIT");
+    button.html(src);
 }
 
 class GameBoard {
@@ -181,11 +191,29 @@ class GameBoard {
             .attr("id", this.uniqid);
         this.kifDiv = boardSetDiv.append("div").attr("class", "kif");
     }
-    async fetchGame(force: boolean): Promise<void> {
-        if (!this.gameObj) {
-            return;
+    async fetchGameTrig(force: boolean, ms = 10000): Promise<void> {
+        if (force) {
+            try {
+                await this.fetchGame(true);
+            } catch (e) {
+                console.log(e);
+                this.fetchGameTrig(false, ms);
+            }
+        } else {
+            setTimeout(async () => {
+                try {
+                    await this.fetchGame(false);
+                } catch (e) {
+                    console.log(e);
+                    this.fetchGameTrig(false, ms);
+                }
+            }, ms);
         }
+    }
+    async fetchGame(force: boolean): Promise<void> {
         if (
+            !this.gameObj ||
+            !this.gameObj.gameId.match(/^(?:[\w.-]+\+){4}\d+$/) ||
             !this.enabled ||
             (this._lastFetch + 8500 > Date.now() &&
                 this._lastGame &&
@@ -207,23 +235,21 @@ class GameBoard {
         );
         const csaPromise = await fetch(urlStr);
         const csa = await csaPromise.text();
-        const player = JKFPlayer.parseCSA(csa);
-        player.goto(Infinity);
+
         if (
             !force &&
+            this.kifuStore &&
             this._lastGame &&
             this._lastGame.gameId === this.gameObj.gameId &&
             this._lastCsa === csa
         ) {
             this._lastFetch = Date.now();
             if (
-                !player.kifu.moves.some((v) =>
+                !this.kifuStore.player.kifu.moves.some((v) =>
                     v.comments?.some((str) => str.startsWith("$END_TIME:"))
                 )
             ) {
-                setTimeout(() => {
-                    this.fetchGame(false);
-                }, 10000);
+                this.fetchGameTrig(false);
             }
             return;
         }
@@ -308,17 +334,157 @@ class GameBoard {
                 });
             iconSet(photoButton, photoSvg);
         }
+        const tweetButton = gameBoardProp.tweetPropFn
+            ? this.navDiv.append("button")
+            : undefined;
+        if (tweetButton) {
+            tweetButton.attr("title", "Twitterで共有").attr("class", "tweet");
+            iconSet(tweetButton, tweetSvg);
+        }
         const redoButton = this.navDiv
             .append("button")
             .attr("title", "現在表示中の棋譜を再読み込み")
-            .on("click", () => {
-                this.fetchGame(true);
+            .on("click", async () => {
+                this.fetchGameTrig(true);
             });
         iconSet(redoButton, rotateSvg);
         this.navDiv
             .append("span")
             .attr("class", "navText")
             .text(this.gameObj.gameName);
+
+        if (this.kifuStore) {
+            // 盤面の更新
+
+            // 現盤面の表示手数取得
+            const lastPly = this.kifuStore.player.tesuu;
+            const lastMaxPly = this.kifuStore.player.kifu.moves.length - 1;
+
+            this.kifuStore.loadKifuSync(csa);
+
+            if (
+                lastPly &&
+                lastPly !== lastMaxPly &&
+                this._lastGame &&
+                this.gameObj &&
+                this._lastGame.gameId === this.gameObj.gameId
+            ) {
+                this.kifuStore.player.goto(lastPly);
+            } else {
+                this.kifuStore.player.go(Infinity);
+            }
+
+            // tweetボタンの設定
+            if (this.gameObj && gameBoardProp.tweetPropFn) {
+                const tweetProp = gameBoardProp.tweetPropFn({
+                    gameId: this.gameObj.gameId,
+                    gameName: this.gameObj.gameName,
+                    tesuu: this.kifuStore.player.tesuu,
+                    move:
+                        this.kifuStore.player.tesuu !== 0
+                            ? JKFPlayer.moveToReadableKifu(
+                                  this.kifuStore.player.kifu.moves[
+                                      this.kifuStore.player.tesuu
+                                  ]
+                              )
+                            : "",
+                });
+                this.navDiv.select("button.tweet").on("click", () => {
+                    window.open(
+                        `https://twitter.com/share?text=${encodeURIComponent(
+                            tweetProp.text
+                        )}&url=${encodeURIComponent(
+                            tweetProp.url ?? ""
+                        )}&hashtags=${encodeURIComponent(
+                            tweetProp.hashtags ?? ""
+                        )}&via=${encodeURIComponent(tweetProp.via ?? "")}`,
+                        "_blank"
+                    );
+                });
+            }
+        } else {
+            // 盤面の初期読み込み
+            const kifuStore = await KifuForJS.loadString(csa, this.uniqid);
+            this.kifuStore = kifuStore;
+            // this.kifuStore.player.go(Infinity);
+
+            // player.go(Infinity) すると何故か処理が非常に重いので代わりに棋譜送りボタンを押す
+            this.boardDiv
+                .select<HTMLButtonElement>("button[data-go=Infinity]")
+                .node()
+                ?.click();
+
+            // グラフ更新トリガ
+            KifuForJS.mobx.autorun(() => {
+                this.drawGraph(kifuStore);
+
+                // tweetボタンの設定
+                if (this.gameObj && gameBoardProp.tweetPropFn) {
+                    const tweetProp = gameBoardProp.tweetPropFn({
+                        gameId: this.gameObj.gameId,
+                        gameName: this.gameObj.gameName,
+                        tesuu: kifuStore.player.tesuu,
+                        move:
+                            kifuStore.player.tesuu !== 0
+                                ? JKFPlayer.moveToReadableKifu(
+                                      kifuStore.player.kifu.moves[
+                                          kifuStore.player.tesuu
+                                      ]
+                                  )
+                                : "",
+                    });
+                    this.navDiv.select("button.tweet").on("click", () => {
+                        window.open(
+                            `https://twitter.com/share?text=${encodeURIComponent(
+                                tweetProp.text
+                            )}&url=${encodeURIComponent(
+                                tweetProp.url ?? ""
+                            )}&hashtags=${encodeURIComponent(
+                                tweetProp.hashtags ?? ""
+                            )}&via=${encodeURIComponent(tweetProp.via ?? "")}`,
+                            "_blank"
+                        );
+                    });
+                }
+            });
+        }
+
+        // 棋譜保存ボタンの有効化＆イベント付与
+        this.boardDiv
+            .select<HTMLButtonElement>("button[class=dl]")
+            .attr("disabled", false)
+            .property("disabled", false)
+            .on("click", () => {
+                window.open(urlOrgStr, "_blank");
+            });
+
+        // 自動更新間隔セレクタの無効化
+        this.boardDiv
+            .select<HTMLSelectElement>("select.autoload")
+            .attr("disabled", true)
+            .property("disabled", true);
+
+        // 自動更新間隔セレクタの値設定
+        if (
+            !this.kifuStore.player.kifu.moves.some((v) =>
+                v.comments?.some((str) => str.startsWith("$END_TIME:"))
+            )
+        ) {
+            this.boardDiv.select("select.autoload").property("value", "30");
+            this.fetchGameTrig(false);
+        } else {
+            this.boardDiv.select("select.autoload").property("value", "NaN");
+        }
+
+        this._lastFetch = Date.now();
+        this._lastGame = this.gameObj;
+        this._lastCsa = csa;
+    }
+
+    async drawGraph(kifuStore: KifuStore): Promise<void> {
+        if (!this.gameObj || !this.kifuStore) {
+            return;
+        }
 
         // 時間フォーマット
         const timeFmt = (v: ITimeFormat): string =>
@@ -366,22 +532,28 @@ class GameBoard {
             return timeFmt({ h, m, s });
         };
 
-        const maxPly = Math.max(
-            player.kifu.moves.length -
-                (player.kifu.moves[player.kifu.moves.length - 1].special
-                    ? 2
-                    : 1),
-            50
-        );
         const graphWidth = Math.max(
-            player.kifu.moves.length -
-                (player.kifu.moves[player.kifu.moves.length - 1].special
+            kifuStore.player.kifu.moves.length -
+                (kifuStore.player.kifu.moves[
+                    kifuStore.player.kifu.moves.length - 1
+                ].special
                     ? 1
                     : 0),
+            kifuStore.player.tesuu + 1,
+            50
+        );
+        const maxPly = Math.max(
+            kifuStore.player.kifu.moves.length -
+                (kifuStore.player.kifu.moves[
+                    kifuStore.player.kifu.moves.length - 1
+                ].special
+                    ? 2
+                    : 1),
+            kifuStore.player.tesuu,
             50
         );
 
-        const remainTimes = player.kifu.moves.map((v, i) =>
+        const remainTimes = kifuStore.player.kifu.moves.map((v, i) =>
             v.time ? remainTimeStr(i, v.time) : ""
         );
         const remainTimesB = remainTimes.filter(
@@ -409,19 +581,21 @@ class GameBoard {
                     {
                         width: graphWidth,
                         maxPly,
+                        tesuu: kifuStore.player.tesuu,
                     },
                     (gameBoardProp.svgPropFn ?? (() => ({})))({
-                        movesLength: player.kifu.moves.length,
-                        lastIsSpecial: !!player.kifu.moves[
-                            player.kifu.moves.length - 1
+                        movesLength: kifuStore.player.kifu.moves.length,
+                        lastIsSpecial: !!kifuStore.player.kifu.moves[
+                            kifuStore.player.kifu.moves.length - 1
                         ].special,
                         gameId: this.gameObj.gameId,
+                        tesuu: kifuStore.player.tesuu,
                     }),
                     colorSet[this.color],
                     yaxisSet[this.yaxis]
                 ),
                 {
-                    score: player.kifu.moves.map((v) =>
+                    score: kifuStore.player.kifu.moves.map((v) =>
                         v.comments
                             ? v.comments.reduce((p, c) => {
                                   const matches = c.match(/^\*\* (-?\d+)/);
@@ -429,7 +603,7 @@ class GameBoard {
                               }, NaN)
                             : NaN
                     ),
-                    comment: player.kifu.moves.map((v, i) =>
+                    comment: kifuStore.player.kifu.moves.map((v, i) =>
                         [
                             [
                                 i !== 0
@@ -448,7 +622,7 @@ class GameBoard {
                             .concat(v.comments ?? [])
                             .join("\n")
                     ),
-                    timePar: player.kifu.moves.map((v, i) =>
+                    timePar: kifuStore.player.kifu.moves.map((v, i) =>
                         v.time
                             ? remainTimeSec(i, v.time) / timeMan.base
                             : Number.NaN
@@ -475,62 +649,15 @@ class GameBoard {
             )
         );
 
-        if (this.kifuStore) {
-            // 盤面の更新
-
-            // 現盤面の表示手数取得
-            const lastPly = this.kifuStore.player.tesuu;
-            const lastMaxPly = this.kifuStore.player.kifu.moves.length - 1;
-
-            this.kifuStore.loadKifuSync(csa);
-
-            if (
-                lastPly &&
-                lastPly !== lastMaxPly &&
-                this._lastGame &&
-                this.gameObj &&
-                this._lastGame.gameId === this.gameObj.gameId
-            ) {
-                this.kifuStore.player.goto(lastPly);
-            } else {
-                this.kifuStore.player.go(Infinity);
-            }
-        } else {
-            // 盤面の初期読み込み
-            this.kifuStore = await KifuForJS.loadString(csa, this.uniqid);
-            // this.kifuStore.player.go(Infinity);
-
-            // player.go(Infinity) すると何故か処理が非常に重いので代わりに棋譜送りボタンを押す
-            this.boardDiv
-                .select<HTMLButtonElement>("button[data-go=Infinity]")
-                .node()
-                ?.click();
-        }
-
-        // 棋譜保存ボタンの有効化＆イベント付与
-        this.boardDiv
-            .select<HTMLButtonElement>("button[class=dl]")
-            .attr("disabled", false)
-            .property("disabled", false)
-            .on("click", () => {
-                window.open(urlOrgStr, "_blank");
-            });
-
-        // 自動更新間隔セレクタの無効化
-        this.boardDiv
-            .select<HTMLSelectElement>("select.autoload")
-            .attr("disabled", true)
-            .property("disabled", true);
-
         // 棋譜テキスト
         if (gameBoardProp.kifuVisible) {
             this.kifDiv.selectAll("*").remove();
             const par = this.kifDiv.append("p");
-            for (const hentry of Object.entries(player.kifu.header)) {
+            for (const hentry of Object.entries(kifuStore.player.kifu.header)) {
                 par.append("span").text(`${hentry[0]}：${hentry[1]}`);
                 par.append("br");
             }
-            player.kifu.moves.forEach((v, i) => {
+            kifuStore.player.kifu.moves.forEach((v, i) => {
                 if (i !== 0) {
                     par.append("span")
                         .attr("style", "white-space:nowrap")
@@ -571,25 +698,10 @@ class GameBoard {
                 }
             });
         }
-        if (
-            !player.kifu.moves.some((v) =>
-                v.comments?.some((str) => str.startsWith("$END_TIME:"))
-            )
-        ) {
-            this.boardDiv.select("select.autoload").property("value", "30");
-            setTimeout(() => {
-                this.fetchGame(false);
-            }, 10000);
-        } else {
-            this.boardDiv.select("select.autoload").property("value", "NaN");
-        }
-        this._lastFetch = Date.now();
-        this._lastGame = this.gameObj;
-        this._lastCsa = csa;
     }
 }
 
-if (gameBoardProp.multiView) {
+if (gameBoardProp.mode === "multi") {
     window.addEventListener("load", () => {
         const body = select("body");
         const selectColor = body.append("select").attr("id", "selectcolor");
@@ -697,7 +809,7 @@ if (gameBoardProp.multiView) {
                 );
                 if (g.length > 0) {
                     b.gameObj = g[0];
-                    b.fetchGame(true);
+                    b.fetchGameTrig(true);
                 } else {
                     b.enabled = false;
                     b.graphDiv.remove();
@@ -715,7 +827,7 @@ if (gameBoardProp.multiView) {
                             .attr("class", "boardset")
                     );
                     boardSetDiv.gameObj = g;
-                    boardSetDiv.fetchGame(true);
+                    boardSetDiv.fetchGameTrig(true);
                     boards.push(boardSetDiv);
                 });
         };
@@ -725,19 +837,19 @@ if (gameBoardProp.multiView) {
         selectColor.on("change", () => {
             boards.forEach((e) => {
                 e.color = selectColor.property("value");
-                e.fetchGame(true);
+                e.fetchGameTrig(true);
             });
         });
         selectYAxis.on("change", () => {
             boards.forEach((e) => {
                 e.yaxis = selectYAxis.property("value");
-                e.fetchGame(true);
+                e.fetchGameTrig(true);
             });
         });
 
         listLoad();
     });
-} else {
+} else if (gameBoardProp.mode === "single") {
     window.addEventListener("load", () => {
         const body = select("body");
         const selectGame = body.append("select").attr("id", "selectgame");
@@ -821,7 +933,7 @@ if (gameBoardProp.multiView) {
                         boardPart.gameObj = e;
                     }
                 });
-                boardPart.fetchGame(true);
+                boardPart.fetchGameTrig(true);
             } else if (gameList.length) {
                 const lastGameId = gameList[gameList.length - 1].gameId;
                 window.location.hash = `#${lastGameId}`;
@@ -835,7 +947,7 @@ if (gameBoardProp.multiView) {
                         boardPart.gameObj = e;
                     }
                 });
-                boardPart.fetchGame(true);
+                boardPart.fetchGameTrig(true);
             }
         };
         selectGame.on("change", () => {
@@ -850,7 +962,7 @@ if (gameBoardProp.multiView) {
                     boardPart.gameObj = e;
                 }
             });
-            boardPart.fetchGame(true);
+            boardPart.fetchGameTrig(true);
         });
         reloadButton.on("click", () => {
             window.location.hash = "";
@@ -858,11 +970,11 @@ if (gameBoardProp.multiView) {
         });
         selectColor.on("change", () => {
             boardPart.color = selectColor.property("value");
-            boardPart.fetchGame(true);
+            boardPart.fetchGameTrig(true);
         });
         selectYAxis.on("change", () => {
             boardPart.yaxis = selectYAxis.property("value");
-            boardPart.fetchGame(true);
+            boardPart.fetchGameTrig(true);
         });
         listLoad();
         window.addEventListener("hashchange", (ev) => {
@@ -876,9 +988,25 @@ if (gameBoardProp.multiView) {
                             boardPart.gameObj = e;
                         }
                     });
-                    boardPart.fetchGame(true);
+                    boardPart.fetchGameTrig(true);
                 }
             }
         });
+    });
+} else {
+    window.addEventListener("load", async () => {
+        if (!gameBoardProp.gameId) {
+            return;
+        }
+        const body = select("body");
+
+        const boardSetDiv = body.append("div").attr("class", "boardset");
+        const boardPart = new GameBoard(boardSetDiv);
+        boardPart.gameObj = {
+            gameId: gameBoardProp.gameId,
+            gameName: gameBoardProp.gameName ?? "",
+        };
+        await boardPart.fetchGameTrig(true);
+        boardPart.kifuStore?.player.goto(gameBoardProp.tesuu ?? Infinity);
     });
 }

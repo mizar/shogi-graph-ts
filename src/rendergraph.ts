@@ -102,6 +102,7 @@ interface Rgba {
  * @param lWidthBorder グラフ罫線幅（枠）
  * @param lWidthScore グラフ線幅（評価値）
  * @param lWidthTime グラフ線幅（持ち時間）
+ * @param lWidthNowPly グラフ線幅（現手数）
  * @param scaleLength 目盛線長さ
  * @param scalePad 目盛線と目盛文字列との余白幅
  * @param cRadiusScore 評価値点の円半径
@@ -111,6 +112,7 @@ interface Rgba {
  * @param colorGridEBld 罫線色（極太）
  * @param colorGridBorder 罫線色（枠）
  * @param colorPly 色（手数）
+ * @param colorPlyNow 色（現手数）
  * @param colorPlayer0 色（互角）
  * @param colorPlayer1 色（先手）
  * @param colorPlayer2 色（後手）
@@ -147,6 +149,7 @@ export interface SvgScoreGraphProp {
     maxPly: number;
     width: number;
     height: number;
+    tesuu: number;
     pad: number;
     capPad: number;
     lWidthNml: number;
@@ -154,6 +157,7 @@ export interface SvgScoreGraphProp {
     lWidthBorder: number;
     lWidthScore: number;
     lWidthTime: number;
+    lWidthTesuu: number;
     scaleLength: number;
     scalePad: number;
     cRadiusScore: number;
@@ -163,6 +167,7 @@ export interface SvgScoreGraphProp {
     colorGridEBld: Rgba;
     colorGridBorder: Rgba;
     colorPly: Rgba;
+    colorTesuu: Rgba;
     colorPlayer0: Rgba;
     colorPlayer1: Rgba;
     colorPlayer2: Rgba;
@@ -795,6 +800,7 @@ function writeSvg<GElement extends Element>(
         maxPly,
         width,
         height,
+        tesuu,
         pad,
         capPad,
         lWidthNml,
@@ -802,6 +808,7 @@ function writeSvg<GElement extends Element>(
         lWidthBorder,
         lWidthScore,
         lWidthTime,
+        lWidthTesuu,
         scaleLength,
         scalePad,
         cRadiusScore,
@@ -819,6 +826,7 @@ function writeSvg<GElement extends Element>(
         colorTimeFillB,
         colorTimeLineW,
         colorTimeFillW,
+        colorTesuu,
         fPosTime1,
         fPosTime2,
         fSizeLw,
@@ -1578,6 +1586,17 @@ function writeSvg<GElement extends Element>(
         _path.setAttribute("fill", "none");
         _svg.appendChild(_path);
     }
+    if (tesuu) {
+        const _path = document.createElementNS(svgNS, "path");
+        _path.setAttribute(
+            "d",
+            `M${fix(tesuu)} ${fix(hheight)}V${fix(-hheight)}`
+        );
+        _path.setAttribute("stroke", rgba(colorTesuu));
+        _path.setAttribute("stroke-width", fix(lWidthTesuu));
+        _path.setAttribute("fill", "none");
+        _svg.appendChild(_path);
+    }
     if (score.length) {
         let pathA = "";
         let pathB = "";
@@ -1709,6 +1728,7 @@ export function doWrite<GElement extends Element>(
                 maxPly: 256,
                 width: 256,
                 height: 48,
+                tesuu: 0,
                 pad: 1.0,
                 capPad: 1.5,
                 lWidthNml: 0.06,
@@ -1716,6 +1736,7 @@ export function doWrite<GElement extends Element>(
                 lWidthBorder: 0.24,
                 lWidthScore: 0.36,
                 lWidthTime: 0.18,
+                lWidthTesuu: 0.36,
                 scaleLength: 1.5,
                 scalePad: 2,
                 cRadiusScore: 0.8,
@@ -1725,6 +1746,7 @@ export function doWrite<GElement extends Element>(
                 colorGridEBld: { r: 68, g: 68, b: 68, a: 1 },
                 colorGridBorder: { r: 0, g: 0, b: 0, a: 1 },
                 colorPly: { r: 0, g: 0, b: 0, a: 1 },
+                colorTesuu: { r: 0, g: 128, b: 0, a: 1 },
                 colorPlayer0: { r: 0, g: 0, b: 0, a: 1 },
                 colorPlayer1: { r: 255, g: 51, b: 0, a: 1 },
                 colorPlayer2: { r: 0, g: 51, b: 255, a: 1 },

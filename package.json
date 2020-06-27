@@ -30,6 +30,7 @@
     "json-kifu-format": "https://github.com/mizar/json-kifu-format.git",
     "kifu-for-js": "https://github.com/mizar/Kifu-for-JS",
     "prettier": "^2.0.5",
+    "raw-loader": "^4.0.1",
     "shogi.js": "https://github.com/mizar/Shogi.js.git",
     "tabler-icons": "^1.10.0",
     "ts-loader": "^7.0.5",

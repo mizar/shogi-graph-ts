@@ -1,50 +1,88 @@
-<!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" prefix="og: http://ogp.me/ns#">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width"/>
-<meta name="twitter:card" content="summary_large_image"/>
-<meta name="twitter:title" content="第1回電竜戦 棋譜中継(複数棋譜)"/>
-<meta name="twitter:image" content="http://www.denryu-sen.jp/denryu-sen-logo.jpg"/>
-<meta property="og:locale" content="ja_JP"/>
-<meta property="og:type" content="website"/>
-<meta property="og:image" content="http://www.denryu-sen.jp/denryu-sen-logo.jpg"/>
-<meta property="og:title" content="第1回電竜戦 棋譜中継(複数棋譜)"/>
-<meta property="og:url" content="http://www.denryu-sen.jp/"/>
-<meta property="og:description" content="電竜戦は、コンピュータ及び人間によるオンラインの将棋の世界大会である。"/>
-<title>第1回電竜戦 棋譜中継(複数棋譜)</title>
+<meta property="og:title" content="floodgate <?php echo htmlspecialchars($_GET[gn]) ?> <?php echo htmlspecialchars($_GET[te]) ?>手目 <?php echo htmlspecialchars($_GET[mv]) ?> まで"/>
+<meta property="og:type" content="article"/>
+<meta property="og:description" content="floodgate <?php echo htmlspecialchars($_GET[gn]) ?> <?php echo htmlspecialchars($_GET[te]) ?>手目 <?php echo htmlspecialchars($_GET[mv]) ?> まで"/>
+<meta property="og:site_name" content="floodgate"/>
+<meta name="twitter:card" content="summary"/>
+<title>floodgate <?php echo htmlspecialchars($_GET[gn]) ?></title>
 <style>
 .kifuforjs .players .mochi .tebanname { overflow: hidden; }
 .kifuforjs textarea, .kifuforjs textarea:disabled { color: #000; background-color: #fff; -webkit-text-fill-color: #000; opacity: 1; }
 .boardset, .boardset .nav, .boardset svg.boardset, .boardset p.kifu, .boardset pre.reason { width: 570px; }
-.boardset-container { display: flex; flex-direction: row; flex-wrap: wrap; }
-.boardset { width: 580px; flex: 0 0 auto; }
 .icon-tabler { font-size: inherit; width: 1em; height: 1em; vertical-align: -.125em; }
 .icon-tabler-brand-twitter { color: #1da1f2; }
 </style>
 <script type="text/javascript">
-var denryuUrlBase = "https://p.mzr.jp/denryusen/dr1_test2";
-var denryuOrgUrlBase = "http://www.golan.sakura.ne.jp/denryusen/dr1_test2";
 var gameBoardProp = {
-    mode: "multi",
-    multiViewSpan: 1860000,
-    url: (gameId) => denryuUrlBase + "/kifufiles/" + gameId + ".csa",
-    urlOrg: (gameId) => denryuOrgUrlBase + "/kifufiles/" + gameId + ".csa",
-    urlList: denryuUrlBase + "/kifulist.txt",
-    logParser: log =>
+    gameId: "<?php echo urlencode($_GET[gi]) ?>",
+    gameName: "<?php echo htmlspecialchars($_GET[gn]) ?>",
+    tesuu: "<?php echo htmlspecialchars($_GET[te]) ?>",
+    url: (gameId) =>
+        [
+            "https://p.mzr.jp/wdoor-latest/",
+            gameId.substring(
+                gameId.length - 14,
+                gameId.length - 10
+            ),
+            "/",
+            gameId.substring(
+                gameId.length - 10,
+                gameId.length - 8
+            ),
+            "/",
+            gameId.substring(
+                gameId.length - 8,
+                gameId.length - 6
+            ),
+            "/",
+            gameId,
+            ".csa",
+        ].join(""),
+    urlOrg: (gameId) =>
+        [
+            "http://wdoor.c.u-tokyo.ac.jp/shogi/LATEST/",
+            gameId.substring(
+                gameId.length - 14,
+                gameId.length - 10
+            ),
+            "/",
+            gameId.substring(
+                gameId.length - 10,
+                gameId.length - 8
+            ),
+            "/",
+            gameId.substring(
+                gameId.length - 8,
+                gameId.length - 6
+            ),
+            "/",
+            gameId,
+            ".csa",
+        ].join(""),
+    urlList: "https://p.mzr.jp/wdoor-latest/shogi-server.log",
+    kifuVisible: true,
+    logParser: (log) =>
         log
             .split("\n")
-            .map((s) =>
-                s.match(
-                    /^<div><a href="\.\/kifujs\/((?:[\w.-]+\+){4}\d+)\.html"[^>]*>([^<]+)<\/a>/
-                )
+            .map(
+                (s) =>
+                    (s.match(
+                        /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d \[INFO\] game (?:started|finished) ((?:[\w.-]+\+){4}\d+)/
+                    ) || { 1: "" })[1]
             )
             .filter((s) => s)
             .map((s) => ({
-                gameId: s[1],
-                gameName: s[2]
-                    .replace(/▲/g, "☗")
-                    .replace(/△/g, "☖"),
+                gameId: s,
+                gameName: [
+                    "☗",
+                    s.split("+")[2],
+                    " ☖",
+                    s.split("+")[3],
+                    " : ",
+                    s.split("+")[4],
+                ].join(""),
             })),
     svgPropFn: (args) => {
         var movesLength = args.movesLength || 256;
@@ -80,7 +118,26 @@ var gameBoardProp = {
             fPosTime2: 0.04,
             fSizeCap: width / Math.max(gameId.length, 64),
             caption: gameId,
-            capLink: denryuOrgUrlBase + "/kifufiles/" + gameId + ".csa",
+            capLink: [
+                "http://wdoor.c.u-tokyo.ac.jp/shogi/view/",
+                gameId.substring(
+                    gameId.length - 14,
+                    gameId.length - 10
+                ),
+                "/",
+                gameId.substring(
+                    gameId.length - 10,
+                    gameId.length - 8
+                ),
+                "/",
+                gameId.substring(
+                    gameId.length - 8,
+                    gameId.length - 6
+                ),
+                "/",
+                gameId,
+                ".csa",
+            ].join(""),
             colorBackground: { r: 255, g: 255, b: 255, a: 1 },
             colorGridNml: { r: 170, g: 170, b: 170, a: 1 },
             colorGridBld: { r: 136, g: 136, b: 136, a: 1 },
@@ -100,7 +157,7 @@ var gameBoardProp = {
     tweetPropFn: (args) => ({
         text: args.gameName + " " + args.tesuu + "手目 " + args.move + "\n\n\n",
         url: new URL(
-            "denryusen_test.php?gi=" +
+            "floodgate.php?gi=" +
             args.gameId +
             "&te=" +
             args.tesuu +
@@ -110,11 +167,11 @@ var gameBoardProp = {
             encodeURIComponent(args.gameName),
             location.href
         ).href,
-        hashtags: "電竜戦",
+        hashtags: "floodgate",
     }),
 };
 </script>
 <script type="text/javascript" src="./kifu-for-js-2.1.2.min.js"></script>
 </head>
-<body><div><a href="http://www.denryu-sen.jp/">電竜戦ホーム</a> <a href="https://golan.sakura.ne.jp/denryusen/dr1_test2/dr1_live.php">中継トップ</a> <a href="./denryusen_single_test">単一棋譜版</a> 複数棋譜版</div><script type="text/javascript" src="./main.js"></script></body>
+<body><div><a href="./floodgate_single">単一棋譜版</a> <a href="./floodgate_multi">複数棋譜版</a></div><script type="text/javascript" src="./main.js"></script></body>
 </html>

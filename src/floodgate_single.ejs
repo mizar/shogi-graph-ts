@@ -3,14 +3,23 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width"/>
+<meta name="twitter:title" content="floodgate 棋譜中継(単一棋譜)"/>
+<meta property="og:locale" content="ja_JP"/>
+<meta property="og:type" content="website"/>
+<meta property="og:title" content="floodgate 棋譜中継(単一棋譜)"/>
+<meta property="og:url" content="http://wdoor.c.u-tokyo.ac.jp/shogi/floodgate.html"/>
+<meta property="og:description" content="floodgate 棋譜中継"/>
 <title>floodgate_single - <%= htmlWebpackPlugin.options.title %></title>
 <style>
 .kifuforjs .players .mochi .tebanname { overflow: hidden; }
 .kifuforjs textarea, .kifuforjs textarea:disabled { color: #000; background-color: #fff; -webkit-text-fill-color: #000; opacity: 1; }
 .boardset, .boardset .nav, .boardset svg.boardset, .boardset p.kifu, .boardset pre.reason { width: 570px; }
+.icon-tabler { font-size: inherit; width: 1em; height: 1em; vertical-align: -.125em; }
+.icon-tabler-brand-twitter { color: #1da1f2; }
 </style>
 <script type="text/javascript">
 var gameBoardProp = {
+    mode: "single",
     url: (gameId) =>
         [
             "https://p.mzr.jp/wdoor-latest/",
@@ -79,8 +88,8 @@ var gameBoardProp = {
     svgPropFn: (args) => {
         var movesLength = args.movesLength || 256;
         var lastIsSpecial = !!args.lastIsSpecial;
-        var maxPly = Math.max(movesLength - (lastIsSpecial ? 2 : 1), 50);
-        var width = Math.max(movesLength - (lastIsSpecial ? 1 : 0), 50);
+        var maxPly = Math.max(movesLength - (lastIsSpecial ? 2 : 1), args.tesuu, 50);
+        var width = Math.max(movesLength - (lastIsSpecial ? 1 : 0), args.tesuu, 50);
         var graphScale = width / 256;
         var gameId = "" + args.gameId;
         return {
@@ -94,6 +103,7 @@ var gameBoardProp = {
             lWidthBorder: 0.24 * graphScale,
             lWidthScore: 0.24 * graphScale,
             lWidthTime: 0.12 * graphScale,
+            lWidthTesuu: 0.24 * graphScale,
             scaleLength: 1.5 * graphScale,
             scalePad: 2 * graphScale,
             cRadiusScore: 0.8 * Math.min(graphScale * 2, 1),
@@ -145,9 +155,24 @@ var gameBoardProp = {
             colorTimeFillW: { r: 128, g: 128, b: 255, a: 0.25 },
         };
     },
+    tweetPropFn: (args) => ({
+        text: args.gameName + " " + args.tesuu + "手目 " + args.move + "\n\n\n",
+        url: new URL(
+            "floodgate.php?gi=" +
+            args.gameId +
+            "&te=" +
+            args.tesuu +
+            "&mv=" +
+            encodeURIComponent(args.move) +
+            "&gn=" +
+            encodeURIComponent(args.gameName),
+            location.href
+        ).href,
+        hashtags: "floodgate",
+    }),
 };
 </script>
 <script type="text/javascript" src="./kifu-for-js-2.1.2.min.js"></script>
 </head>
-<body>単一棋譜版 <a href="./floodgate_multi">複数棋譜版</a><script type="text/javascript" src="./main.js"></script></body>
+<body><div>単一棋譜版 <a href="./floodgate_multi">複数棋譜版</a></div><script type="text/javascript" src="./main.js"></script></body>
 </html>
