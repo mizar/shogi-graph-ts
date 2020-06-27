@@ -1,6 +1,8 @@
+<!DOCTYPE html>
 <html lang="ja" prefix="og: http://ogp.me/ns#">
 <head>
 <meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width"/>
 <meta property="og:title" content="第1回電竜戦 <?php echo htmlspecialchars($_GET["gn"]) ?> <?php echo htmlspecialchars($_GET["te"]) ?>手目 <?php echo htmlspecialchars($_GET[mv]) ?> まで"/>
 <meta property="og:type" content="article"/>
 <meta property="og:description" content="第1回電竜戦 <?php echo htmlspecialchars($_GET["gn"]) ?> <?php echo htmlspecialchars($_GET["te"]) ?>手目 <?php echo htmlspecialchars($_GET[mv]) ?> まで"/>
