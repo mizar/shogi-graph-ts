@@ -107,6 +107,7 @@ var gameBoardProp = {
         hashtags: "電竜戦",
         via: "DenryuSen",
     }),
+    mobxEnable: false,
 };
 </script>
 <script type="text/javascript" src="./kifu-for-js-2.1.2.min.js"></script>

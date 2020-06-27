@@ -169,6 +169,7 @@ var gameBoardProp = {
         ).href,
         hashtags: "floodgate",
     }),
+    mobxEnable: false,
 };
 </script>
 <script type="text/javascript" src="./kifu-for-js-2.1.2.min.js"></script>

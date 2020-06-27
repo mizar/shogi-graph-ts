@@ -55,6 +55,7 @@ declare const gameBoardProp: {
     gameId?: string;
     gameName?: string;
     tesuu?: string | number;
+    mobxEnable?: boolean;
 };
 
 declare const KifuForJS: {
@@ -374,6 +375,10 @@ class GameBoard {
                 this.kifuStore.player.go(Infinity);
             }
 
+            if (!gameBoardProp.mobxEnable) {
+                this.drawGraph(this.kifuStore);
+            }
+
             // tweetボタンの設定
             if (this.gameObj && gameBoardProp.tweetPropFn) {
                 const tweetProp = gameBoardProp.tweetPropFn({
@@ -424,8 +429,7 @@ class GameBoard {
                 .node()
                 ?.click();
 
-            // グラフ更新トリガ
-            KifuForJS.mobx.autorun(() => {
+            const _fn = () => {
                 this.drawGraph(kifuStore);
 
                 // tweetボタンの設定
@@ -456,7 +460,14 @@ class GameBoard {
                         );
                     });
                 }
-            });
+            };
+
+            if (gameBoardProp.mobxEnable) {
+                // グラフ更新トリガ
+                KifuForJS.mobx.autorun(_fn);
+            } else {
+                _fn();
+            }
         }
 
         // 棋譜保存ボタンの有効化＆イベント付与
