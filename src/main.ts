@@ -339,7 +339,51 @@ class GameBoard {
             ? this.navDiv.append("button")
             : undefined;
         if (tweetButton) {
-            tweetButton.attr("title", "Twitterで共有").attr("class", "tweet");
+            tweetButton
+                .attr("title", "Twitterで共有")
+                .attr("class", "tweet")
+                .on("click", () => {
+                    if (
+                        !this.gameObj ||
+                        !this.kifuStore ||
+                        !gameBoardProp.tweetPropFn
+                    ) {
+                        return;
+                    }
+                    const tweetProp = gameBoardProp.tweetPropFn({
+                        gameId: this.gameObj.gameId,
+                        gameName: this.gameObj.gameName,
+                        tesuu: this.kifuStore.player.tesuu,
+                        move:
+                            this.kifuStore.player.tesuu !== 0
+                                ? JKFPlayer.moveToReadableKifu(
+                                      this.kifuStore.player.kifu.moves[
+                                          this.kifuStore.player.tesuu
+                                      ]
+                                  )
+                                : "",
+                    });
+                    window.open(
+                        `https://twitter.com/share?text=${encodeURIComponent(
+                            tweetProp.text
+                        )}${
+                            tweetProp.url
+                                ? `&url=${encodeURIComponent(tweetProp.url)}`
+                                : ""
+                        }${
+                            tweetProp.hashtags
+                                ? `&hashtags=${encodeURIComponent(
+                                      tweetProp.hashtags
+                                  )}`
+                                : ""
+                        }${
+                            tweetProp.via
+                                ? `&via=${encodeURIComponent(tweetProp.via)}`
+                                : ""
+                        }`,
+                        "_blank"
+                    );
+                });
             iconSet(tweetButton, tweetSvg);
         }
         const redoButton = this.navDiv
@@ -378,45 +422,6 @@ class GameBoard {
             if (!gameBoardProp.mobxEnable) {
                 this.drawGraph(this.kifuStore);
             }
-
-            // tweetボタンの設定
-            if (this.gameObj && gameBoardProp.tweetPropFn) {
-                const tweetProp = gameBoardProp.tweetPropFn({
-                    gameId: this.gameObj.gameId,
-                    gameName: this.gameObj.gameName,
-                    tesuu: this.kifuStore.player.tesuu,
-                    move:
-                        this.kifuStore.player.tesuu !== 0
-                            ? JKFPlayer.moveToReadableKifu(
-                                  this.kifuStore.player.kifu.moves[
-                                      this.kifuStore.player.tesuu
-                                  ]
-                              )
-                            : "",
-                });
-                this.navDiv.select("button.tweet").on("click", () => {
-                    window.open(
-                        `https://twitter.com/share?text=${encodeURIComponent(
-                            tweetProp.text
-                        )}${
-                            tweetProp.url
-                                ? `&url=${encodeURIComponent(tweetProp.url)}`
-                                : ""
-                        }${
-                            tweetProp.hashtags
-                                ? `&hashtags=${encodeURIComponent(
-                                      tweetProp.hashtags
-                                  )}`
-                                : ""
-                        }${
-                            tweetProp.via
-                                ? `&via=${encodeURIComponent(tweetProp.via)}`
-                                : ""
-                        }`,
-                        "_blank"
-                    );
-                });
-            }
         } else {
             // 盤面の初期読み込み
             const kifuStore = await KifuForJS.loadString(csa, this.uniqid);
@@ -429,44 +434,13 @@ class GameBoard {
                 .node()
                 ?.click();
 
-            const _fn = () => {
-                this.drawGraph(kifuStore);
-
-                // tweetボタンの設定
-                if (this.gameObj && gameBoardProp.tweetPropFn) {
-                    const tweetProp = gameBoardProp.tweetPropFn({
-                        gameId: this.gameObj.gameId,
-                        gameName: this.gameObj.gameName,
-                        tesuu: kifuStore.player.tesuu,
-                        move:
-                            kifuStore.player.tesuu !== 0
-                                ? JKFPlayer.moveToReadableKifu(
-                                      kifuStore.player.kifu.moves[
-                                          kifuStore.player.tesuu
-                                      ]
-                                  )
-                                : "",
-                    });
-                    this.navDiv.select("button.tweet").on("click", () => {
-                        window.open(
-                            `https://twitter.com/share?text=${encodeURIComponent(
-                                tweetProp.text
-                            )}&url=${encodeURIComponent(
-                                tweetProp.url ?? ""
-                            )}&hashtags=${encodeURIComponent(
-                                tweetProp.hashtags ?? ""
-                            )}&via=${encodeURIComponent(tweetProp.via ?? "")}`,
-                            "_blank"
-                        );
-                    });
-                }
-            };
-
             if (gameBoardProp.mobxEnable) {
                 // グラフ更新トリガ
-                KifuForJS.mobx.autorun(_fn);
+                KifuForJS.mobx.autorun(() => {
+                    this.drawGraph(kifuStore);
+                });
             } else {
-                _fn();
+                this.drawGraph(kifuStore);
             }
         }
 
