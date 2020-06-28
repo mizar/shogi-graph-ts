@@ -4,10 +4,11 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width"/>
 <meta property="og:title" content="floodgate <?php echo htmlspecialchars($_GET["gn"]) ?> <?php echo htmlspecialchars($_GET["te"]) ?>手目 <?php echo htmlspecialchars($_GET[mv]) ?> まで"/>
-<meta property="og:type" content="article"/>
 <meta property="og:description" content="floodgate <?php echo htmlspecialchars($_GET["gn"]) ?> <?php echo htmlspecialchars($_GET["te"]) ?>手目 <?php echo htmlspecialchars($_GET[mv]) ?> まで"/>
 <meta property="og:site_name" content="floodgate"/>
-<meta name="twitter:card" content="summary"/>
+<meta property="og:url" content="http://wdoor.c.u-tokyo.ac.jp/shogi/floodgate.html"/>
+<meta property="og:locale" content="ja_JP"/>
+<meta property="og:type" content="article"/>
 <title>floodgate <?php echo htmlspecialchars($_GET["gn"]) ?></title>
 <style>
 .kifuforjs .players .mochi .tebanname { overflow: hidden; }
