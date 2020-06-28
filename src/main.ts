@@ -364,7 +364,7 @@ class GameBoard {
                                 : "",
                     });
                     window.open(
-                        `https://twitter.com/share?text=${encodeURIComponent(
+                        `https://twitter.com/intent/tweet?text=${encodeURIComponent(
                             tweetProp.text
                         )}${
                             tweetProp.url
