@@ -44,7 +44,7 @@ var gameBoardProp = {
     svgPropFn: (args) => {
         var movesLength = args.movesLength || 256;
         var lastIsSpecial = !!args.lastIsSpecial;
-        var maxPly = Math.max(movesLength - (lastIsSpecial ? 2 : 1), args.tesuu, 50);
+        var maxPly = Math.max(movesLength - 1, args.tesuu, 50);
         var width = Math.max(movesLength - (lastIsSpecial ? 1 : 0), args.tesuu, 50);
         var graphScale = width / 256;
         var gameId = "" + args.gameId;
@@ -108,7 +108,7 @@ var gameBoardProp = {
         hashtags: "電竜戦",
         via: "DenryuSen",
     }),
-    mobxEnable: false,
+    mobxEnable: true,
 };
 </script>
 <script type="text/javascript" src="./kifu-for-js-2.1.2.min.js"></script>

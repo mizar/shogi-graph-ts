@@ -420,7 +420,7 @@ class GameBoard {
             }
 
             if (!gameBoardProp.mobxEnable) {
-                this.drawGraph(this.kifuStore);
+                this.drawGraph(this.kifuStore.player);
             }
         } else {
             // 盤面の初期読み込み
@@ -437,11 +437,18 @@ class GameBoard {
             if (gameBoardProp.mobxEnable) {
                 // グラフ更新トリガ
                 KifuForJS.mobx.autorun(() => {
-                    this.drawGraph(kifuStore);
+                    const player = this.kifuStore?.player;
+                    const tesuu = this.kifuStore?.player.tesuu;
+                    // 遅延更新：盤面の表示手数を動かす場合、1手毎にイベントが発生するため更新を遅延させて途中のイベントをなるべく無視する
+                    setTimeout(() => {
+                        // 遅延呼び出し元と現在の値が異なる場合、グラフの描画更新を見送り
+                        if (player && this.kifuStore && this.kifuStore.player === player && this.kifuStore.player.tesuu === tesuu) {
+                            this.drawGraph(player);
+                        }
+                    }, 100);
                 });
-            } else {
-                this.drawGraph(kifuStore);
             }
+            this.drawGraph(this.kifuStore.player);
         }
 
         // 棋譜保存ボタンの有効化＆イベント付与
@@ -476,7 +483,7 @@ class GameBoard {
         this._lastCsa = csa;
     }
 
-    async drawGraph(kifuStore: KifuStore): Promise<void> {
+    async drawGraph(player: JKFPlayer): Promise<void> {
         if (!this.gameObj || !this.kifuStore) {
             return;
         }
@@ -528,27 +535,22 @@ class GameBoard {
         };
 
         const graphWidth = Math.max(
-            kifuStore.player.kifu.moves.length -
-                (kifuStore.player.kifu.moves[
-                    kifuStore.player.kifu.moves.length - 1
+            player.kifu.moves.length -
+                (player.kifu.moves[
+                    player.kifu.moves.length - 1
                 ].special
                     ? 1
                     : 0),
-            kifuStore.player.tesuu + 1,
+            player.tesuu + 1,
             50
         );
         const maxPly = Math.max(
-            kifuStore.player.kifu.moves.length -
-                (kifuStore.player.kifu.moves[
-                    kifuStore.player.kifu.moves.length - 1
-                ].special
-                    ? 2
-                    : 1),
-            kifuStore.player.tesuu,
+            player.kifu.moves.length - 1,
+            player.tesuu,
             50
         );
 
-        const remainTimes = kifuStore.player.kifu.moves.map((v, i) =>
+        const remainTimes = player.kifu.moves.map((v, i) =>
             v.time ? remainTimeStr(i, v.time) : ""
         );
         const remainTimesB = remainTimes.filter(
@@ -576,21 +578,21 @@ class GameBoard {
                     {
                         width: graphWidth,
                         maxPly,
-                        tesuu: kifuStore.player.tesuu,
+                        tesuu: player.tesuu,
                     },
                     (gameBoardProp.svgPropFn ?? (() => ({})))({
-                        movesLength: kifuStore.player.kifu.moves.length,
-                        lastIsSpecial: !!kifuStore.player.kifu.moves[
-                            kifuStore.player.kifu.moves.length - 1
+                        movesLength: player.kifu.moves.length,
+                        lastIsSpecial: !!player.kifu.moves[
+                            player.kifu.moves.length - 1
                         ].special,
                         gameId: this.gameObj.gameId,
-                        tesuu: kifuStore.player.tesuu,
+                        tesuu: player.tesuu,
                     }),
                     colorSet[this.color],
                     yaxisSet[this.yaxis]
                 ),
                 {
-                    score: kifuStore.player.kifu.moves.map((v) =>
+                    score: player.kifu.moves.map((v) =>
                         v.comments
                             ? v.comments.reduce((p, c) => {
                                   const matches = c.match(/^\*\* (-?\d+)/);
@@ -598,7 +600,7 @@ class GameBoard {
                               }, NaN)
                             : NaN
                     ),
-                    comment: kifuStore.player.kifu.moves.map((v, i) =>
+                    comment: player.kifu.moves.map((v, i) =>
                         [
                             [
                                 i !== 0
@@ -617,7 +619,7 @@ class GameBoard {
                             .concat(v.comments ?? [])
                             .join("\n")
                     ),
-                    timePar: kifuStore.player.kifu.moves.map((v, i) =>
+                    timePar: player.kifu.moves.map((v, i) =>
                         v.time
                             ? remainTimeSec(i, v.time) / timeMan.base
                             : Number.NaN
@@ -648,11 +650,11 @@ class GameBoard {
         if (gameBoardProp.kifuVisible) {
             this.kifDiv.selectAll("*").remove();
             const par = this.kifDiv.append("p");
-            for (const hentry of Object.entries(kifuStore.player.kifu.header)) {
+            for (const hentry of Object.entries(player.kifu.header)) {
                 par.append("span").text(`${hentry[0]}：${hentry[1]}`);
                 par.append("br");
             }
-            kifuStore.player.kifu.moves.forEach((v, i) => {
+            player.kifu.moves.forEach((v, i) => {
                 if (i !== 0) {
                     par.append("span")
                         .attr("style", "white-space:nowrap")

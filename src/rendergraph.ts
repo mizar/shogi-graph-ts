@@ -1779,7 +1779,8 @@ export function doWrite<GElement extends Element>(
                 remainTimeW: "",
                 caption: "",
                 capLink: "",
-                plyCallback: () => undefined,
+                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                plyCallback: () => {},
             },
             p
         )
