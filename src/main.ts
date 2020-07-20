@@ -235,7 +235,13 @@ class GameBoard {
             (gameBoardProp.urlOrg ?? gameBoardProp.url)(this.gameObj.gameId)
         );
         const csaPromise = await fetch(urlStr);
-        const csa = await csaPromise.text();
+        // special move行のマルチステートメントコメントを複数行に分割
+        // json-kifu-format の不具合暫定対策
+        // https://github.com/na2hiro/json-kifu-format/issues/31#issuecomment-660633980
+        const csa = (await csaPromise.text()).replace(
+            /(\n%[^,\n]+),('[^\n]+\n)(T[^\n]+\n)?/g,
+            (m0, m1, m2, m3) => `${m1}\n${m3}${m2}`
+        );
 
         if (
             !force &&
@@ -442,7 +448,12 @@ class GameBoard {
                     // 遅延更新：盤面の表示手数を動かす場合、1手毎にイベントが発生するため更新を遅延させて途中のイベントをなるべく無視する
                     setTimeout(() => {
                         // 遅延呼び出し元と現在の値が異なる場合、グラフの描画更新を見送り
-                        if (player && this.kifuStore && this.kifuStore.player === player && this.kifuStore.player.tesuu === tesuu) {
+                        if (
+                            player &&
+                            this.kifuStore &&
+                            this.kifuStore.player === player &&
+                            this.kifuStore.player.tesuu === tesuu
+                        ) {
                             this.drawGraph(player);
                         }
                     }, 100);
@@ -536,19 +547,13 @@ class GameBoard {
 
         const graphWidth = Math.max(
             player.kifu.moves.length -
-                (player.kifu.moves[
-                    player.kifu.moves.length - 1
-                ].special
+                (player.kifu.moves[player.kifu.moves.length - 1].special
                     ? 1
                     : 0),
             player.tesuu + 1,
             50
         );
-        const maxPly = Math.max(
-            player.kifu.moves.length - 1,
-            player.tesuu,
-            50
-        );
+        const maxPly = Math.max(player.kifu.moves.length - 1, player.tesuu, 50);
 
         const remainTimes = player.kifu.moves.map((v, i) =>
             v.time ? remainTimeStr(i, v.time) : ""
