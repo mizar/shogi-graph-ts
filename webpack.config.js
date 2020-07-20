@@ -57,15 +57,39 @@ module.exports = (env) => ({
             }),
             new HtmlWebPackPlugin({
                 title: name,
-                template: "./src/denryusen_single_test.ejs",
+                template: "./src/denryusen_single_test1.ejs",
                 chunks: ["denryusen_single_test"],
-                filename: "denryusen_single_test.html",
+                filename: "denryusen_single_test1.html",
             }),
             new HtmlWebPackPlugin({
                 title: name,
-                template: "./src/denryusen_multi_test.ejs",
+                template: "./src/denryusen_single_test2.ejs",
+                chunks: ["denryusen_single_test"],
+                filename: "denryusen_single_test2.html",
+            }),
+            new HtmlWebPackPlugin({
+                title: name,
+                template: "./src/denryusen_single_test3.ejs",
+                chunks: ["denryusen_single_test"],
+                filename: "denryusen_single_test3.html",
+            }),
+            new HtmlWebPackPlugin({
+                title: name,
+                template: "./src/denryusen_multi_test1.ejs",
                 chunks: ["denryusen_multi_test"],
-                filename: "denryusen_multi_test.html",
+                filename: "denryusen_multi_test1.html",
+            }),
+            new HtmlWebPackPlugin({
+                title: name,
+                template: "./src/denryusen_multi_test2.ejs",
+                chunks: ["denryusen_multi_test"],
+                filename: "denryusen_multi_test2.html",
+            }),
+            new HtmlWebPackPlugin({
+                title: name,
+                template: "./src/denryusen_multi_test3.ejs",
+                chunks: ["denryusen_multi_test"],
+                filename: "denryusen_multi_test3.html",
             }),
         ],
         [

@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width"/>
-<meta property="og:title" content="第1回電竜戦 棋譜中継(単一棋譜)"/>
-<meta property="og:description" content="第1回電竜戦 棋譜中継(単一棋譜)"/>
+<meta property="og:title" content="第1回電竜戦 <?php echo htmlspecialchars($_GET["gn"]) ?> <?php echo htmlspecialchars($_GET["te"]) ?>手目 <?php echo htmlspecialchars($_GET[mv]) ?> まで"/>
+<meta property="og:description" content="第1回電竜戦 <?php echo htmlspecialchars($_GET["gn"]) ?> <?php echo htmlspecialchars($_GET["te"]) ?>手目 <?php echo htmlspecialchars($_GET[mv]) ?> まで"/>
 <meta property="og:site_name" content="電竜戦"/>
-<meta property="og:image" content="http://www.denryu-sen.jp/denryu-sen-logo.jpg"/>
-<meta property="og:url" content="http://www.denryu-sen.jp/"/>
+<meta property="og:image" content="https://golan.sakura.ne.jp/denryusen/dr1_test2/shogiban_gd1200.php?csa=<?php echo urlencode($_GET["gi"]) ?>.csa&tesuu=<?php echo urlencode($_GET["te"]) ?>"/>
+<meta property="og:url" content="https://golan.sakura.ne.jp/denryusen/dr1_test2/dist/denryusen_single#<?php echo urlencode($_GET["gi"]) ?>"/>
 <meta property="og:locale" content="ja_JP"/>
-<meta property="og:type" content="website"/>
+<meta property="og:type" content="article"/>
 <meta name="twitter:card" content="summary_large_image"/>
-<title>第1回電竜戦 棋譜中継(単一棋譜)</title>
+<title>第1回電竜戦 <?php echo htmlspecialchars($_GET["gn"]) ?></title>
 <style>
 .kifuforjs .players .mochi .tebanname { overflow: hidden; }
 .kifuforjs textarea, .kifuforjs textarea:disabled { color: #000; background-color: #fff; -webkit-text-fill-color: #000; opacity: 1; }
@@ -20,10 +20,14 @@
 .icon-tabler-brand-twitter { color: #1da1f2; }
 </style>
 <script type="text/javascript">
-var denryuUrlBase = "..";
+var denryuUrlBase = "https://p.mzr.jp/denryusen/dr1_test2";
+var denryuOrgUrlBase = "http://www.golan.sakura.ne.jp/denryusen/dr1_test2";
 var gameBoardProp = {
-    mode: "single",
+    gameId: "<?php echo urlencode($_GET["gi"]) ?>",
+    gameName: "<?php echo htmlspecialchars($_GET["gn"]) ?>",
+    tesuu: "<?php echo htmlspecialchars($_GET["te"]) ?>",
     url: (gameId) => denryuUrlBase + "/kifufiles/" + gameId + ".csa",
+    urlOrg: (gameId) => denryuOrgUrlBase + "/kifufiles/" + gameId + ".csa",
     urlList: denryuUrlBase + "/kifulist.txt",
     kifuVisible: true,
     logParser: log =>
@@ -75,7 +79,7 @@ var gameBoardProp = {
             fPosTime2: 0.04,
             fSizeCap: width / Math.max(gameId.length, 64),
             caption: gameId,
-            capLink: denryuUrlBase + "/kifufiles/" + gameId + ".csa",
+            capLink: denryuOrgUrlBase + "/kifufiles/" + gameId + ".csa",
             colorBackground: { r: 255, g: 255, b: 255, a: 1 },
             colorGridNml: { r: 170, g: 170, b: 170, a: 1 },
             colorGridBld: { r: 136, g: 136, b: 136, a: 1 },
@@ -95,7 +99,7 @@ var gameBoardProp = {
     tweetPropFn: (args) => ({
         text: args.gameName + " " + args.tesuu + "手目 " + args.move + "\n\n\n",
         url: new URL(
-            "denryusen.php?gi=" +
+            "denryusen_test2.php?gi=" +
             args.gameId +
             "&te=" +
             args.tesuu +
@@ -113,5 +117,5 @@ var gameBoardProp = {
 </script>
 <script type="text/javascript" src="./kifu-for-js-2.1.4.min.js"></script>
 </head>
-<body><div><a href="http://www.denryu-sen.jp/">電竜戦ホーム</a> <a href="https://golan.sakura.ne.jp/denryusen/dr1_test2/dr1_live.php">中継トップ</a> 単一棋譜版 <a href="./denryusen_multi">複数棋譜版</a></div><script type="text/javascript" src="./main.js"></script></body>
-</html>
+<body><div><a href="http://www.denryu-sen.jp/">電竜戦ホーム</a> <a href="https://golan.sakura.ne.jp/denryusen/dr1_test2/dr1_live.php">中継トップ</a> <a href="./denryusen_single_test">単一棋譜版</a> <a href="./denryusen_multi_test">複数棋譜版</a></div><script type="text/javascript" src="./main.js"></script></body>
+</head>

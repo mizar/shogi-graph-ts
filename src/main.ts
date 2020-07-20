@@ -235,6 +235,8 @@ class GameBoard {
             (gameBoardProp.urlOrg ?? gameBoardProp.url)(this.gameObj.gameId)
         );
         const csaPromise = await fetch(urlStr);
+        const csa = await csaPromise.text();
+        /*
         // special move行のマルチステートメントコメントを複数行に分割
         // json-kifu-format の不具合暫定対策
         // https://github.com/na2hiro/json-kifu-format/issues/31#issuecomment-660633980
@@ -242,6 +244,7 @@ class GameBoard {
             /(\n%[^,\n]+),('[^\n]+\n)(T[^\n]+\n)?/g,
             (m0, m1, m2, m3) => `${m1}\n${m3}${m2}`
         );
+        */
 
         if (
             !force &&

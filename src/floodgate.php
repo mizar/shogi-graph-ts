@@ -175,7 +175,7 @@ var gameBoardProp = {
     mobxEnable: true,
 };
 </script>
-<script type="text/javascript" src="./kifu-for-js-2.1.2.min.js"></script>
+<script type="text/javascript" src="./kifu-for-js-2.1.4.min.js"></script>
 </head>
 <body><div><a href="./floodgate_single">単一棋譜版</a> <a href="./floodgate_multi">複数棋譜版</a></div><script type="text/javascript" src="./main.js"></script></body>
 </html>
