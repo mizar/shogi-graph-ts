@@ -21,7 +21,7 @@
 </style>
 <script type="text/javascript">
 var denryuUrlBase = "https://p.mzr.jp/denryusen/dr1_test1";
-var denryuOrgUrlBase = "https://www.golan.sakura.ne.jp/denryusen/dr1_test1";
+var denryuOrgUrlBase = "https://golan.sakura.ne.jp/denryusen/dr1_test1";
 var gameBoardProp = {
     gameId: "<?php echo urlencode($_GET["gi"]) ?>",
     gameName: "<?php echo htmlspecialchars($_GET["gn"]) ?>",
