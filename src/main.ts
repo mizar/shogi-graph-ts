@@ -4,6 +4,7 @@
  */
 
 import { doWrite, SvgScoreGraphProp, YAxis } from "./rendergraph";
+import { getTags } from "./castle";
 import { JKFPlayer } from "json-kifu-format";
 import { ITimeFormat } from "json-kifu-format/dist/src/Formats";
 import { select, BaseType, Selection } from "d3-selection";
@@ -16,6 +17,7 @@ import tweetSvg from "tabler-icons/icons/brand-twitter.svg";
 import { mobx } from "kifu-for-js/bundle/src/index";
 import KifuStore from "kifu-for-js/bundle/src/stores/KifuStore";
 import url from "url";
+import { threadId } from "worker_threads";
 
 interface GameObj {
     gameId: string;
@@ -162,6 +164,8 @@ class GameBoard {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     navDiv: Selection<HTMLDivElement, any, HTMLElement, any>;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    tagDiv: Selection<HTMLDivElement, any, HTMLElement, any>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     svgDiv: Selection<HTMLDivElement, any, HTMLElement, any>;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     boardDiv: Selection<HTMLDivElement, any, HTMLElement, any>;
@@ -185,6 +189,7 @@ class GameBoard {
             Math.floor(Math.random() * 4503599627370496).toString(36);
         this.graphDiv = boardSetDiv;
         this.navDiv = boardSetDiv.append("div").attr("class", "nav");
+        this.tagDiv = boardSetDiv.append("div").attr("class", "tag");
         this.svgDiv = boardSetDiv.append("div").attr("class", "svggraph");
         this.boardDiv = boardSetDiv
             .append("div")
@@ -406,6 +411,22 @@ class GameBoard {
             .append("span")
             .attr("class", "navText")
             .text(this.gameObj.gameName);
+
+        // tag bar
+        {
+            this.tagDiv.selectAll("*").remove();
+            getTags(JKFPlayer.parseCSA(csa))
+                .filter((tag) => !tag.hide)
+                .forEach((tag) => {
+                    this.tagDiv
+                        .append("button")
+                        .attr("title", JSON.stringify(tag, undefined, 2))
+                        .text(`${tag.name.ja_JP}:${tag.tesuu}`)
+                        .on("click", () => {
+                            this.kifuStore?.player.goto(tag.tesuu);
+                        });
+                });
+        }
 
         if (this.kifuStore) {
             // 盤面の更新
