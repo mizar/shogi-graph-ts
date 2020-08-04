@@ -6,8 +6,8 @@
 <meta property="og:title" content="第1回電竜戦 <?php echo htmlspecialchars($_GET["gn"]) ?> <?php echo htmlspecialchars($_GET["te"]) ?>手目 <?php echo htmlspecialchars($_GET[mv]) ?> まで"/>
 <meta property="og:description" content="第1回電竜戦 <?php echo htmlspecialchars($_GET["gn"]) ?> <?php echo htmlspecialchars($_GET["te"]) ?>手目 <?php echo htmlspecialchars($_GET[mv]) ?> まで"/>
 <meta property="og:site_name" content="電竜戦"/>
-<meta property="og:image" content="https://golan.sakura.ne.jp/denryusen/dr1_test2/shogiban_gd1200.php?csa=<?php echo urlencode($_GET["gi"]) ?>.csa&tesuu=<?php echo urlencode($_GET["te"]) ?>"/>
-<meta property="og:url" content="https://golan.sakura.ne.jp/denryusen/dr1_test2/dist/denryusen_single#<?php echo urlencode($_GET["gi"]) ?>"/>
+<meta property="og:image" content="https://golan.sakura.ne.jp/denryusen/dr1_test1/shogiban_gd1200.php?csa=<?php echo urlencode($_GET["gi"]) ?>.csa&tesuu=<?php echo urlencode($_GET["te"]) ?>"/>
+<meta property="og:url" content="https://golan.sakura.ne.jp/denryusen/dr1_test1/dist/denryusen_single#<?php echo urlencode($_GET["gi"]) ?>"/>
 <meta property="og:locale" content="ja_JP"/>
 <meta property="og:type" content="article"/>
 <meta name="twitter:card" content="summary_large_image"/>
