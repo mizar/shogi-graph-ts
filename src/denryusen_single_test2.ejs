@@ -18,6 +18,7 @@
 .boardset, .boardset .nav, .boardset svg.boardset, .boardset p.kifu, .boardset pre.reason { width: 570px; }
 .icon-tabler { font-size: inherit; width: 1em; height: 1em; vertical-align: -.125em; }
 .icon-tabler-brand-twitter { color: #1da1f2; }
+button { touch-action: manipulation; }
 </style>
 <script type="text/javascript">
 var denryuUrlBase = "https://p.mzr.jp/denryusen/dr1_test2";
