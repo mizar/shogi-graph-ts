@@ -2,7 +2,7 @@
 <html lang="ja" prefix="og: http://ogp.me/ns#">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
 <meta property="og:title" content="floodgate <?php echo htmlspecialchars($_GET["gn"]) ?> <?php echo htmlspecialchars($_GET["te"]) ?>手目 <?php echo htmlspecialchars($_GET[mv]) ?> まで"/>
 <meta property="og:description" content="floodgate <?php echo htmlspecialchars($_GET["gn"]) ?> <?php echo htmlspecialchars($_GET["te"]) ?>手目 <?php echo htmlspecialchars($_GET[mv]) ?> まで"/>
 <meta property="og:site_name" content="floodgate"/>
@@ -16,6 +16,7 @@
 .boardset, .boardset .nav, .boardset svg.boardset, .boardset p.kifu, .boardset pre.reason { width: 570px; }
 .icon-tabler { font-size: inherit; width: 1em; height: 1em; vertical-align: -.125em; }
 .icon-tabler-brand-twitter { color: #1da1f2; }
+button { touch-action: manipulation; }
 </style>
 <script type="text/javascript">
 var gameBoardProp = {
