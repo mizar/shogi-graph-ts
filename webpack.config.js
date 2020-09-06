@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
 const HtmlWebPackPlugin = require("html-webpack-plugin");
 const { BundleAnalyzerPlugin } = require("webpack-bundle-analyzer");
 const { CleanWebpackPlugin } = require("clean-webpack-plugin");
@@ -8,7 +9,6 @@ const { name } = require("./package.json");
 const CopyFilePlugin = require("copy-webpack-plugin");
 const path = require("path");
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 module.exports = (env) => ({
     devtool: "source-map",
     entry: "./src/main.ts",
@@ -55,46 +55,27 @@ module.exports = (env) => ({
                 chunks: ["denryusen_multi"],
                 filename: "denryusen_multi.html",
             }),
-            new HtmlWebPackPlugin({
-                title: name,
-                template: "./src/denryusen_single_test1.ejs",
-                chunks: ["denryusen_single_test"],
-                filename: "denryusen_single_test1.html",
-            }),
-            new HtmlWebPackPlugin({
-                title: name,
-                template: "./src/denryusen_single_test2.ejs",
-                chunks: ["denryusen_single_test"],
-                filename: "denryusen_single_test2.html",
-            }),
-            new HtmlWebPackPlugin({
-                title: name,
-                template: "./src/denryusen_single_test3.ejs",
-                chunks: ["denryusen_single_test"],
-                filename: "denryusen_single_test3.html",
-            }),
-            new HtmlWebPackPlugin({
-                title: name,
-                template: "./src/denryusen_multi_test1.ejs",
-                chunks: ["denryusen_multi_test"],
-                filename: "denryusen_multi_test1.html",
-            }),
-            new HtmlWebPackPlugin({
-                title: name,
-                template: "./src/denryusen_multi_test2.ejs",
-                chunks: ["denryusen_multi_test"],
-                filename: "denryusen_multi_test2.html",
-            }),
-            new HtmlWebPackPlugin({
-                title: name,
-                template: "./src/denryusen_multi_test3.ejs",
-                chunks: ["denryusen_multi_test"],
-                filename: "denryusen_multi_test3.html",
-            }),
         ],
+        ["1", "2", "3", "4"].map(
+            (count) =>
+                new HtmlWebPackPlugin({
+                    title: name,
+                    template: `./src/denryusen_single_test${count}.ejs`,
+                    chunks: ["denryusen_single_test"],
+                    filename: `denryusen_single_test${count}.html`,
+                })
+        ),
+        ["1", "2", "3", "4"].map(
+            (count) =>
+                new HtmlWebPackPlugin({
+                    title: name,
+                    template: `./src/denryusen_multi_test${count}.ejs`,
+                    chunks: ["denryusen_multi_test"],
+                    filename: `denryusen_multi_test${count}.html`,
+                })
+        ),
         [
             new CompressionPlugin({
-                // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
                 algorithm(input, compressionOptions, callback) {
                     return gzip(input, compressionOptions, callback);
                 },
